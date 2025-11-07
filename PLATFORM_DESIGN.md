@@ -259,63 +259,112 @@
 
 ## 🎨 設計系統
 
-### 色彩系統（參考 Linear）
+### 色彩系統（黑白極簡風格）
 
-#### 主色調（Primary）
+#### 設計原則
+- **以黑白灰為主** - 專業、清晰、易讀
+- **避免漸層** - 保持平面、簡潔
+- **極少使用顏色** - 僅用於關鍵狀態（成功/錯誤）
+- **高對比度** - 確保可讀性
+
+---
+
+#### 主要灰階（Light Mode）
 ```css
---primary-50:  #EEF2FF;  /* Lightest */
---primary-100: #E0E7FF;
---primary-200: #C7D2FE;
---primary-300: #A5B4FC;
---primary-400: #818CF8;
---primary-500: #6366F1;  /* Main */
---primary-600: #4F46E5;
---primary-700: #4338CA;
---primary-800: #3730A3;
---primary-900: #312E81;  /* Darkest */
+/* 背景層級 */
+--bg-primary:   #FFFFFF;  /* 主背景 - 純白 */
+--bg-secondary: #FAFAFA;  /* 次要背景 - 幾乎白 */
+--bg-tertiary:  #F5F5F5;  /* 卡片背景 - 淺灰 */
+
+/* 邊框 */
+--border-light:  #E5E5E5;  /* 淺邊框 */
+--border-normal: #D4D4D4;  /* 一般邊框 */
+--border-heavy:  #A3A3A3;  /* 強調邊框 */
+
+/* 文字 */
+--text-primary:   #171717;  /* 主文字 - 近黑 */
+--text-secondary: #525252;  /* 次要文字 - 中灰 */
+--text-tertiary:  #737373;  /* 三級文字 - 淺灰 */
+--text-disabled:  #A3A3A3;  /* 禁用文字 - 很淺灰 */
 ```
 
-#### 語義色彩
+#### 暗色主題（Dark Mode）
 ```css
-/* Success */
---success: #10B981;
---success-bg: #ECFDF5;
+/* 背景層級 */
+--dark-bg-primary:   #0A0A0A;  /* 主背景 - 近黑 */
+--dark-bg-secondary: #171717;  /* 次要背景 */
+--dark-bg-tertiary:  #262626;  /* 卡片背景 */
 
-/* Warning */
---warning: #F59E0B;
---warning-bg: #FEF3C7;
+/* 邊框 */
+--dark-border-light:  #262626;  /* 淺邊框 */
+--dark-border-normal: #404040;  /* 一般邊框 */
+--dark-border-heavy:  #525252;  /* 強調邊框 */
 
-/* Error */
---error: #EF4444;
---error-bg: #FEE2E2;
-
-/* Info */
---info: #3B82F6;
---info-bg: #DBEAFE;
+/* 文字 */
+--dark-text-primary:   #FAFAFA;  /* 主文字 - 近白 */
+--dark-text-secondary: #A3A3A3;  /* 次要文字 */
+--dark-text-tertiary:  #737373;  /* 三級文字 */
+--dark-text-disabled:  #525252;  /* 禁用文字 */
 ```
 
-#### 中性色（灰階）
+#### 語義色彩（極少使用）
 ```css
---gray-50:  #F9FAFB;
---gray-100: #F3F4F6;
---gray-200: #E5E7EB;
---gray-300: #D1D5DB;
---gray-400: #9CA3AF;
---gray-500: #6B7280;
---gray-600: #4B5563;
---gray-700: #374151;
---gray-800: #1F2937;
---gray-900: #111827;
+/* 僅用於狀態指示 - 無漸層、無背景色 */
+
+/* Success - 成功狀態 */
+--success: #22C55E;  /* 綠色 - 僅用於成功提示 */
+
+/* Error - 錯誤狀態 */
+--error: #EF4444;    /* 紅色 - 僅用於錯誤提示 */
+
+/* Warning - 警告（極少使用） */
+--warning: #F59E0B;  /* 橙色 - 僅用於重要警告 */
+
+/* 註：以上顏色只用於圖標、文字，不用於背景或大面積填充 */
 ```
 
-#### 暗色主題
+#### 強調色（選擇性使用）
 ```css
---dark-bg-primary: #0F0F10;
---dark-bg-secondary: #18181B;
---dark-bg-tertiary: #27272A;
---dark-border: #3F3F46;
---dark-text-primary: #FAFAFA;
---dark-text-secondary: #A1A1AA;
+/* 如果需要強調某個元素（如主按鈕），使用黑色 */
+--accent: #171717;  /* 黑色強調 */
+
+/* Hover 狀態使用稍淺的灰 */
+--accent-hover: #262626;
+```
+
+---
+
+#### 使用範例
+
+**✅ 正確使用：**
+```tsx
+// 按鈕 - 黑底白字
+<Button className="bg-black text-white hover:bg-neutral-800">
+  Primary Action
+</Button>
+
+// 次要按鈕 - 透明帶邊框
+<Button className="border border-neutral-300 text-neutral-900 hover:bg-neutral-50">
+  Secondary
+</Button>
+
+// 成功提示 - 僅綠色文字
+<span className="text-green-600">✓ Success</span>
+
+// 錯誤提示 - 僅紅色文字
+<span className="text-red-600">✗ Error</span>
+```
+
+**❌ 避免使用：**
+```tsx
+// 不要用彩色背景
+<div className="bg-blue-500">...</div>  ❌
+
+// 不要用漸層
+<div className="bg-gradient-to-r from-blue-500 to-purple-600">...</div>  ❌
+
+// 不要用彩色邊框（除非語義狀態）
+<div className="border-blue-500">...</div>  ❌
 ```
 
 ---

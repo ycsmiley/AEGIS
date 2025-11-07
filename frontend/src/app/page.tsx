@@ -5,11 +5,11 @@ import { Building2, Package, DollarSign, Zap, Shield, TrendingUp } from "lucide-
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+    <div className="min-h-screen bg-white">
       {/* Hero Section */}
       <div className="container mx-auto px-4 py-16">
         <div className="text-center mb-16">
-          <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          <h1 className="text-5xl font-bold mb-4 text-black">
             Aegis Finance
           </h1>
           <p className="text-xl text-gray-600 mb-8">
@@ -45,7 +45,7 @@ export default function HomePage() {
         <div className="grid md:grid-cols-3 gap-6 mb-16">
           <Card>
             <CardHeader>
-              <Zap className="h-10 w-10 mb-2 text-blue-600" />
+              <Zap className="h-10 w-10 mb-2 text-black" />
               <CardTitle>Instant Financing</CardTitle>
               <CardDescription>
                 Get paid immediately for approved invoices. No waiting for payment terms.
@@ -55,7 +55,7 @@ export default function HomePage() {
 
           <Card>
             <CardHeader>
-              <TrendingUp className="h-10 w-10 mb-2 text-green-600" />
+              <TrendingUp className="h-10 w-10 mb-2 text-black" />
               <CardTitle>AI Dynamic Pricing</CardTitle>
               <CardDescription>
                 Aegis AI analyzes risk factors in real-time to offer optimal financing rates.
@@ -65,7 +65,7 @@ export default function HomePage() {
 
           <Card>
             <CardHeader>
-              <Shield className="h-10 w-10 mb-2 text-purple-600" />
+              <Shield className="h-10 w-10 mb-2 text-black" />
               <CardTitle>Arc Native USDC</CardTitle>
               <CardDescription>
                 No ETH needed for gas. All transactions use USDC - simple and transparent.
@@ -86,7 +86,7 @@ export default function HomePage() {
               { step: "5", title: "Get Paid", desc: "USDC transferred instantly" },
             ].map((item) => (
               <div key={item.step} className="text-center">
-                <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center mx-auto mb-3 text-xl font-bold">
+                <div className="w-12 h-12 bg-black text-white rounded-full flex items-center justify-center mx-auto mb-3 text-xl font-bold">
                   {item.step}
                 </div>
                 <h3 className="font-semibold mb-1">{item.title}</h3>
@@ -97,7 +97,7 @@ export default function HomePage() {
         </div>
 
         {/* Arc Benefits */}
-        <Card className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+        <Card className="bg-black text-white">
           <CardHeader>
             <CardTitle className="text-2xl">Why Arc Chain?</CardTitle>
           </CardHeader>
@@ -105,19 +105,19 @@ export default function HomePage() {
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <h4 className="font-semibold mb-2">✅ Single Currency</h4>
-                <p className="text-blue-100">Users only need USDC - no ETH required for gas</p>
+                <p className="text-neutral-300">Users only need USDC - no ETH required for gas</p>
               </div>
               <div>
                 <h4 className="font-semibold mb-2">✅ No Approve Needed</h4>
-                <p className="text-blue-100">Native token transfers without ERC20 approvals</p>
+                <p className="text-neutral-300">Native token transfers without ERC20 approvals</p>
               </div>
               <div>
                 <h4 className="font-semibold mb-2">✅ Transparent Costs</h4>
-                <p className="text-blue-100">Gas and payments both in USDC - clear pricing</p>
+                <p className="text-neutral-300">Gas and payments both in USDC - clear pricing</p>
               </div>
               <div>
                 <h4 className="font-semibold mb-2">✅ Lower Barrier</h4>
-                <p className="text-blue-100">Perfect for Web2 users entering DeFi</p>
+                <p className="text-neutral-300">Perfect for Web2 users entering DeFi</p>
               </div>
             </div>
           </CardContent>
