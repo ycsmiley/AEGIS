@@ -5,17 +5,17 @@ import { Building2, Package, DollarSign, Zap, Shield, TrendingUp } from "lucide-
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+    <div className="min-h-screen bg-black">
       {/* Hero Section */}
       <div className="container mx-auto px-4 py-16">
         <div className="text-center mb-16">
-          <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          <h1 className="text-5xl font-bold mb-4 text-white">
             Aegis Finance
           </h1>
-          <p className="text-xl text-gray-600 mb-8">
+          <p className="text-xl text-neutral-400 mb-8">
             Arc-Native Supply Chain Finance Platform
           </p>
-          <p className="text-lg text-gray-500 max-w-2xl mx-auto mb-8">
+          <p className="text-lg text-neutral-500 max-w-2xl mx-auto mb-8">
             Unlock instant liquidity for your invoices with AI-powered dynamic pricing.
             Built on Arc blockchain - where USDC is native.
           </p>
@@ -43,31 +43,31 @@ export default function HomePage() {
 
         {/* Features Grid */}
         <div className="grid md:grid-cols-3 gap-6 mb-16">
-          <Card>
+          <Card className="bg-neutral-900 border-neutral-800">
             <CardHeader>
-              <Zap className="h-10 w-10 mb-2 text-blue-600" />
-              <CardTitle>Instant Financing</CardTitle>
-              <CardDescription>
+              <Zap className="h-10 w-10 mb-2 text-white" />
+              <CardTitle className="text-white">Instant Financing</CardTitle>
+              <CardDescription className="text-neutral-400">
                 Get paid immediately for approved invoices. No waiting for payment terms.
               </CardDescription>
             </CardHeader>
           </Card>
 
-          <Card>
+          <Card className="bg-neutral-900 border-neutral-800">
             <CardHeader>
-              <TrendingUp className="h-10 w-10 mb-2 text-green-600" />
-              <CardTitle>AI Dynamic Pricing</CardTitle>
-              <CardDescription>
+              <TrendingUp className="h-10 w-10 mb-2 text-white" />
+              <CardTitle className="text-white">AI Dynamic Pricing</CardTitle>
+              <CardDescription className="text-neutral-400">
                 Aegis AI analyzes risk factors in real-time to offer optimal financing rates.
               </CardDescription>
             </CardHeader>
           </Card>
 
-          <Card>
+          <Card className="bg-neutral-900 border-neutral-800">
             <CardHeader>
-              <Shield className="h-10 w-10 mb-2 text-purple-600" />
-              <CardTitle>Arc Native USDC</CardTitle>
-              <CardDescription>
+              <Shield className="h-10 w-10 mb-2 text-white" />
+              <CardTitle className="text-white">Arc Native USDC</CardTitle>
+              <CardDescription className="text-neutral-400">
                 No ETH needed for gas. All transactions use USDC - simple and transparent.
               </CardDescription>
             </CardHeader>
@@ -76,7 +76,7 @@ export default function HomePage() {
 
         {/* How It Works */}
         <div className="mb-16">
-          <h2 className="text-3xl font-bold text-center mb-8">How It Works</h2>
+          <h2 className="text-3xl font-bold text-center mb-8 text-white">How It Works</h2>
           <div className="grid md:grid-cols-5 gap-4">
             {[
               { step: "1", title: "Upload Invoice", desc: "Supplier uploads invoice details" },
@@ -86,18 +86,18 @@ export default function HomePage() {
               { step: "5", title: "Get Paid", desc: "USDC transferred instantly" },
             ].map((item) => (
               <div key={item.step} className="text-center">
-                <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center mx-auto mb-3 text-xl font-bold">
+                <div className="w-12 h-12 bg-white text-black rounded-full flex items-center justify-center mx-auto mb-3 text-xl font-bold">
                   {item.step}
                 </div>
-                <h3 className="font-semibold mb-1">{item.title}</h3>
-                <p className="text-sm text-gray-600">{item.desc}</p>
+                <h3 className="font-semibold mb-1 text-white">{item.title}</h3>
+                <p className="text-sm text-neutral-400">{item.desc}</p>
               </div>
             ))}
           </div>
         </div>
 
         {/* Arc Benefits */}
-        <Card className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+        <Card className="bg-white text-black">
           <CardHeader>
             <CardTitle className="text-2xl">Why Arc Chain?</CardTitle>
           </CardHeader>
@@ -105,19 +105,19 @@ export default function HomePage() {
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <h4 className="font-semibold mb-2">✅ Single Currency</h4>
-                <p className="text-blue-100">Users only need USDC - no ETH required for gas</p>
+                <p className="text-neutral-600">Users only need USDC - no ETH required for gas</p>
               </div>
               <div>
                 <h4 className="font-semibold mb-2">✅ No Approve Needed</h4>
-                <p className="text-blue-100">Native token transfers without ERC20 approvals</p>
+                <p className="text-neutral-600">Native token transfers without ERC20 approvals</p>
               </div>
               <div>
                 <h4 className="font-semibold mb-2">✅ Transparent Costs</h4>
-                <p className="text-blue-100">Gas and payments both in USDC - clear pricing</p>
+                <p className="text-neutral-600">Gas and payments both in USDC - clear pricing</p>
               </div>
               <div>
                 <h4 className="font-semibold mb-2">✅ Lower Barrier</h4>
-                <p className="text-blue-100">Perfect for Web2 users entering DeFi</p>
+                <p className="text-neutral-600">Perfect for Web2 users entering DeFi</p>
               </div>
             </div>
           </CardContent>
