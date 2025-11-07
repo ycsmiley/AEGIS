@@ -5,13 +5,47 @@ import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagm
 import { parseUnits, id as hashString } from 'viem';
 import { createClient } from '@/lib/supabase/client';
 import { Database } from '@/lib/supabase/types';
-import { InvoiceCard } from '@/components/InvoiceCard';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Stat } from '@/components/ui/stat';
 import ArcPoolABI from '@/contracts/ArcPool.json';
+import {
+  Plus,
+  FileText,
+  DollarSign,
+  Clock,
+  TrendingUp,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  Loader2
+} from 'lucide-react';
 
 type Invoice = Database['public']['Tables']['invoices']['Row'];
+
+const statusConfig = {
+  PENDING: {
+    label: 'Pending Approval',
+    variant: 'warning' as const,
+    icon: Clock,
+  },
+  APPROVED: {
+    label: 'Approved',
+    variant: 'success' as const,
+    icon: CheckCircle,
+  },
+  REJECTED: {
+    label: 'Rejected',
+    variant: 'error' as const,
+    icon: XCircle,
+  },
+  FINANCED: {
+    label: 'Financed',
+    variant: 'success' as const,
+    icon: DollarSign,
+  },
+};
 
 export default function SupplierPortal() {
   const { address, isConnected } = useAccount();
@@ -20,7 +54,6 @@ export default function SupplierPortal() {
   const [error, setError] = useState<string | null>(null);
 
   const supabase = createClient();
-
   const contractAddress = process.env.NEXT_PUBLIC_ARC_CONTRACT_ADDRESS as `0x${string}` || '0x';
 
   const {
@@ -43,7 +76,6 @@ export default function SupplierPortal() {
       setIsLoading(true);
       setError(null);
 
-      // In production, you would filter by supplier_id based on user profile
       const { data, error: fetchError } = await supabase
         .from('invoices')
         .select('*')
@@ -69,23 +101,21 @@ export default function SupplierPortal() {
     try {
       const signatureData = JSON.parse(invoice.aegis_signature);
 
-      // V2 Contract Call with 7 parameters
       await writeContract({
         address: contractAddress,
         abi: ArcPoolABI,
         functionName: 'withdrawFinancing',
         args: [
-          hashString(invoice.id),                                      // invoiceId
-          parseUnits(invoice.aegis_payout_offer.toString(), 6),        // payoutAmount
-          parseUnits(signatureData.repaymentAmount.toString(), 6),     // repaymentAmount ← NEW
-          BigInt(signatureData.dueDate),                               // dueDate ← NEW
-          BigInt(signatureData.nonce),                                 // nonce
-          BigInt(signatureData.deadline),                              // deadline
-          signatureData.signature as `0x${string}`,                    // signature
+          hashString(invoice.id),
+          parseUnits(invoice.aegis_payout_offer.toString(), 6),
+          parseUnits(signatureData.repaymentAmount.toString(), 6),
+          BigInt(signatureData.dueDate),
+          BigInt(signatureData.nonce),
+          BigInt(signatureData.deadline),
+          signatureData.signature as `0x${string}`,
         ],
       });
 
-      // Update invoice status in database after successful transaction
       if (isSuccess) {
         await supabase
           .from('invoices')
@@ -103,14 +133,28 @@ export default function SupplierPortal() {
     }
   };
 
+  // Calculate stats
+  const stats = {
+    total: invoices.length,
+    financed: invoices.filter(i => i.status === 'FINANCED').length,
+    pending: invoices.filter(i => i.status === 'PENDING').length,
+    totalFinanced: invoices
+      .filter(i => i.status === 'FINANCED' && i.aegis_payout_offer)
+      .reduce((sum, i) => sum + (i.aegis_payout_offer || 0), 0),
+    averageRate: 8.5, // TODO: Calculate from actual data
+  };
+
   if (!isConnected) {
     return (
-      <div className="container mx-auto px-4 py-16">
-        <Card>
-          <CardContent className="py-16">
-            <p className="text-center text-xl text-muted-foreground">
+      <div className="min-h-screen bg-black flex items-center justify-center px-4">
+        <Card className="max-w-md w-full">
+          <CardContent className="py-16 text-center">
+            <AlertCircle className="h-12 w-12 text-neutral-500 mx-auto mb-4" />
+            <p className="text-xl text-white mb-2">Wallet Not Connected</p>
+            <p className="text-neutral-400 mb-6">
               Please connect your wallet to access the Supplier Portal
             </p>
+            <Button size="lg">Connect Wallet</Button>
           </CardContent>
         </Card>
       </div>
@@ -118,113 +162,264 @@ export default function SupplierPortal() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold mb-2">Supplier Portal</h1>
-        <p className="text-muted-foreground">
-          View your invoices and accept financing offers
-        </p>
-      </div>
+    <div className="min-h-screen bg-black">
+      <div className="container mx-auto px-4 py-8">
+        {/* Page Header */}
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-bold text-white mb-2">Supplier Portal</h1>
+            <p className="text-neutral-400">Upload invoices and get instant financing offers</p>
+          </div>
+          <Button size="lg" className="gap-2">
+            <Plus className="h-5 w-5" />
+            Upload Invoice
+          </Button>
+        </div>
 
-      {error && (
-        <Alert variant="destructive" className="mb-6">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      {isSuccess && (
-        <Alert className="mb-6">
-          <AlertDescription>
-            ✓ Financing accepted successfully! Transaction: {hash?.slice(0, 10)}...
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-3 mb-8">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Invoices
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{invoices.length}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Approved Invoices
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-green-600">
-              {invoices.filter((i) => i.status === 'APPROVED').length}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Financed Invoices
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-blue-600">
-              {invoices.filter((i) => i.status === 'FINANCED').length}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Invoices List */}
-      <div>
-        <h2 className="text-2xl font-semibold mb-4">Your Invoices</h2>
-
-        {isLoading ? (
-          <Card>
-            <CardContent className="py-16">
-              <p className="text-center text-muted-foreground">Loading invoices...</p>
+        {/* Error/Success Messages */}
+        {error && (
+          <Card className="mb-6 border-red-800 bg-red-900/20">
+            <CardContent className="py-4">
+              <div className="flex items-center gap-2">
+                <XCircle className="h-5 w-5 text-red-400" />
+                <p className="text-red-400">{error}</p>
+              </div>
             </CardContent>
           </Card>
-        ) : invoices.length === 0 ? (
-          <Card>
-            <CardContent className="py-16">
-              <p className="text-center text-muted-foreground">
-                No invoices found. Upload your first invoice to get started!
-              </p>
+        )}
+
+        {isSuccess && (
+          <Card className="mb-6 border-green-800 bg-green-900/20">
+            <CardContent className="py-4">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-5 w-5 text-green-400" />
+                <p className="text-green-400">
+                  Financing accepted successfully! Transaction: {hash?.slice(0, 10)}...
+                </p>
+              </div>
             </CardContent>
           </Card>
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {invoices.map((invoice) => (
-              <InvoiceCard
-                key={invoice.id}
-                invoice={invoice}
-                onAcceptFinancing={handleAcceptFinancing}
-                showActions={!isWritePending && !isConfirming}
-              />
-            ))}
+        )}
+
+        {/* Stats Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <Stat
+            label="Total Invoices"
+            value={stats.total}
+            icon={FileText}
+            description="All time"
+          />
+          <Stat
+            label="Financed Amount"
+            value={`$${stats.totalFinanced.toLocaleString()}`}
+            icon={DollarSign}
+            trend={{ value: 15.3, isPositive: true }}
+            description="Total funded"
+          />
+          <Stat
+            label="Pending Approval"
+            value={stats.pending}
+            icon={Clock}
+            description="Awaiting buyer confirmation"
+          />
+          <Stat
+            label="Average APR"
+            value={`${stats.averageRate}%`}
+            icon={TrendingUp}
+            trend={{ value: 0.3, isPositive: false }}
+            description="Across all invoices"
+          />
+        </div>
+
+        {/* Active Financing Offers */}
+        {invoices.filter(i => i.status === 'APPROVED').length > 0 && (
+          <section className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl font-bold text-white">Active Offers</h2>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {invoices
+                .filter(i => i.status === 'APPROVED')
+                .map((invoice) => (
+                  <Card key={invoice.id} className="hover:border-neutral-600 transition-colors">
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <CardTitle className="text-lg">{invoice.id}</CardTitle>
+                          <CardDescription>Buyer: {invoice.buyer_id}</CardDescription>
+                        </div>
+                        <Badge variant="success">
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Approved
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-sm text-neutral-400 mb-1">Invoice Amount</p>
+                          <p className="text-xl font-bold text-white">
+                            ${invoice.amount.toLocaleString()}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-neutral-400 mb-1">Financing Offer</p>
+                          <p className="text-xl font-bold text-green-400">
+                            ${invoice.aegis_payout_offer?.toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-4 border-t border-neutral-800">
+                        <div>
+                          <p className="text-xs text-neutral-500">Due Date</p>
+                          <p className="text-sm font-semibold text-white">
+                            {invoice.due_date ? new Date(invoice.due_date).toLocaleDateString() : 'N/A'}
+                          </p>
+                        </div>
+                        <Button
+                          size="sm"
+                          onClick={() => handleAcceptFinancing(invoice)}
+                          disabled={isWritePending || isConfirming}
+                        >
+                          {(isWritePending || isConfirming) ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Processing
+                            </>
+                          ) : (
+                            'Accept Offer'
+                          )}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+            </div>
+          </section>
+        )}
+
+        {/* Invoice List */}
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-bold text-white">All Invoices</h2>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm">Filter</Button>
+              <Button variant="outline" size="sm">Sort</Button>
+            </div>
+          </div>
+
+          {isLoading ? (
+            <Card>
+              <CardContent className="py-16 text-center">
+                <Loader2 className="h-8 w-8 animate-spin text-neutral-500 mx-auto mb-4" />
+                <p className="text-neutral-400">Loading invoices...</p>
+              </CardContent>
+            </Card>
+          ) : invoices.length === 0 ? (
+            <Card>
+              <CardContent className="py-16 text-center">
+                <FileText className="h-12 w-12 text-neutral-500 mx-auto mb-4" />
+                <p className="text-white mb-2">No invoices yet</p>
+                <p className="text-neutral-400 mb-6">
+                  Upload your first invoice to get started!
+                </p>
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Upload Invoice
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardContent className="p-0">
+                <div className="divide-y divide-neutral-800">
+                  {invoices.map((invoice) => {
+                    const statusInfo = statusConfig[invoice.status as keyof typeof statusConfig];
+                    const StatusIcon = statusInfo?.icon || AlertCircle;
+
+                    return (
+                      <div
+                        key={invoice.id}
+                        className="p-6 hover:bg-neutral-900/50 transition-colors cursor-pointer"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <h3 className="text-lg font-semibold text-white">
+                                {invoice.id}
+                              </h3>
+                              <Badge variant={statusInfo?.variant || 'default'}>
+                                <StatusIcon className="h-3 w-3 mr-1" />
+                                {statusInfo?.label || invoice.status}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-neutral-400 mb-3">
+                              Buyer: {invoice.buyer_id}
+                            </p>
+                            <div className="flex gap-6 text-sm">
+                              <div>
+                                <span className="text-neutral-500">Amount: </span>
+                                <span className="text-white font-medium">
+                                  ${invoice.amount.toLocaleString()}
+                                </span>
+                              </div>
+                              {invoice.due_date && (
+                                <div>
+                                  <span className="text-neutral-500">Due: </span>
+                                  <span className="text-white font-medium">
+                                    {new Date(invoice.due_date).toLocaleDateString()}
+                                  </span>
+                                </div>
+                              )}
+                              <div>
+                                <span className="text-neutral-500">Uploaded: </span>
+                                <span className="text-white font-medium">
+                                  {new Date(invoice.created_at).toLocaleDateString()}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-3">
+                            {invoice.aegis_payout_offer && (
+                              <div className="text-right mr-4">
+                                <p className="text-xs text-neutral-500 mb-1">Offer</p>
+                                <p className="text-lg font-bold text-green-400">
+                                  ${invoice.aegis_payout_offer.toLocaleString()}
+                                </p>
+                              </div>
+                            )}
+                            <Button variant="ghost" size="sm">
+                              View Details
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </section>
+
+        {/* Processing Indicator */}
+        {(isWritePending || isConfirming) && (
+          <div className="fixed bottom-4 right-4 z-50">
+            <Card className="border-neutral-700">
+              <CardContent className="py-4 px-6 flex items-center gap-3">
+                <Loader2 className="h-5 w-5 animate-spin text-white" />
+                <p className="text-sm font-medium text-white">
+                  {isWritePending && 'Confirming transaction...'}
+                  {isConfirming && 'Waiting for confirmation...'}
+                </p>
+              </CardContent>
+            </Card>
           </div>
         )}
       </div>
-
-      {/* Processing Indicator */}
-      {(isWritePending || isConfirming) && (
-        <div className="fixed bottom-4 right-4">
-          <Card>
-            <CardContent className="py-4 px-6">
-              <p className="text-sm font-medium">
-                {isWritePending && 'Confirming transaction...'}
-                {isConfirming && 'Waiting for confirmation...'}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
     </div>
   );
 }
