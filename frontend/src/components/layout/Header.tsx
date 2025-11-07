@@ -9,7 +9,6 @@ const navigation = [
   { name: 'Supplier', href: '/supplier' },
   { name: 'Buyer', href: '/buyer' },
   { name: 'LP', href: '/lp' },
-  { name: 'Design', href: '/design-system' },
 ];
 
 export function Header() {
