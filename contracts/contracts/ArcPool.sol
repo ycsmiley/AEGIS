@@ -23,6 +23,9 @@ contract ArcPool is ReentrancyGuard, AccessControl, EIP712 {
     uint256 public totalPoolSize;
     uint256 public availableLiquidity;
     uint256 public totalFinanced;
+    uint256 public totalInterestEarned;    // Track total interest earned
+    uint256 public protocolFeeRate = 1000; // 10% of interest (basis points, 10000 = 100%)
+    address public protocolFeeReceiver;    // Address to receive protocol fees
     
     // Track used invoices and LP deposits
     mapping(bytes32 => bool) public usedInvoices;
@@ -33,8 +36,10 @@ contract ArcPool is ReentrancyGuard, AccessControl, EIP712 {
     struct FinancingRecord {
         bytes32 invoiceId;
         address supplier;
-        uint256 payoutAmount;
-        uint256 timestamp;
+        uint256 payoutAmount;      // Amount paid to supplier
+        uint256 repaymentAmount;   // Amount that must be repaid (includes interest)
+        uint256 dueDate;           // Repayment due date
+        uint256 timestamp;         // Financing timestamp
         bool repaid;
     }
     
@@ -50,8 +55,11 @@ contract ArcPool is ReentrancyGuard, AccessControl, EIP712 {
     event Repayment(
         bytes32 indexed invoiceId,
         address indexed payer,
-        uint256 amount
+        uint256 amount,
+        uint256 interest,
+        uint256 lateFee
     );
+    event InterestDistributed(uint256 lpShare, uint256 protocolShare);
     event AegisWalletUpdated(address indexed oldWallet, address indexed newWallet);
     
     // ============ Constructor ============
@@ -61,6 +69,7 @@ contract ArcPool is ReentrancyGuard, AccessControl, EIP712 {
     {
         require(_aegisServerWallet != address(0), "Invalid Aegis wallet");
         aegisServerWallet = _aegisServerWallet;
+        protocolFeeReceiver = msg.sender; // Default to deployer
         
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(ADMIN_ROLE, msg.sender);
@@ -81,13 +90,7 @@ contract ArcPool is ReentrancyGuard, AccessControl, EIP712 {
      * @notice LP deposits USDC (native token on Arc)
      */
     function deposit() external payable nonReentrant {
-        require(msg.value > 0, "Amount must be greater than 0");
-        
-        lpDeposits[msg.sender] += msg.value;
-        totalPoolSize += msg.value;
-        availableLiquidity += msg.value;
-        
-        emit Deposit(msg.sender, msg.value, totalPoolSize);
+        _processDeposit(msg.sender, msg.value);
     }
     
     /**
@@ -117,6 +120,8 @@ contract ArcPool is ReentrancyGuard, AccessControl, EIP712 {
      * @dev Core function: validates EIP-712 signature and transfers USDC
      * @param invoiceId Unique invoice identifier
      * @param payoutAmount Amount to payout to supplier
+     * @param repaymentAmount Total amount that must be repaid (includes interest)
+     * @param dueDate Repayment due date timestamp
      * @param nonce Unique nonce for replay protection
      * @param deadline Signature expiration timestamp
      * @param signature EIP-712 signature from Aegis server
@@ -124,6 +129,8 @@ contract ArcPool is ReentrancyGuard, AccessControl, EIP712 {
     function withdrawFinancing(
         bytes32 invoiceId,
         uint256 payoutAmount,
+        uint256 repaymentAmount,
+        uint256 dueDate,
         uint256 nonce,
         uint256 deadline,
         bytes memory signature
@@ -131,14 +138,18 @@ contract ArcPool is ReentrancyGuard, AccessControl, EIP712 {
         require(!usedInvoices[invoiceId], "Invoice already financed");
         require(block.timestamp <= deadline, "Signature expired");
         require(payoutAmount <= availableLiquidity, "Insufficient pool liquidity");
+        require(repaymentAmount > payoutAmount, "Repayment must be greater than payout");
+        require(dueDate > block.timestamp, "Due date must be in the future");
         
-        // Build EIP-712 hash
+        // Build EIP-712 hash (updated to include repaymentAmount and dueDate)
         bytes32 structHash = keccak256(
             abi.encode(
-                keccak256("FinancingRequest(bytes32 invoiceId,address supplier,uint256 payoutAmount,uint256 nonce,uint256 deadline)"),
+                keccak256("FinancingRequest(bytes32 invoiceId,address supplier,uint256 payoutAmount,uint256 repaymentAmount,uint256 dueDate,uint256 nonce,uint256 deadline)"),
                 invoiceId,
                 msg.sender,
                 payoutAmount,
+                repaymentAmount,
+                dueDate,
                 nonce,
                 deadline
             )
@@ -159,6 +170,8 @@ contract ArcPool is ReentrancyGuard, AccessControl, EIP712 {
             invoiceId: invoiceId,
             supplier: msg.sender,
             payoutAmount: payoutAmount,
+            repaymentAmount: repaymentAmount,
+            dueDate: dueDate,
             timestamp: block.timestamp,
             repaid: false
         });
@@ -171,18 +184,59 @@ contract ArcPool is ReentrancyGuard, AccessControl, EIP712 {
     }
     
     /**
-     * @notice Repay financed invoice
+     * @notice Repay financed invoice with interest
      * @param invoiceId Invoice to repay
      */
     function repay(bytes32 invoiceId) external payable nonReentrant {
+        FinancingRecord storage record = financingRecords[invoiceId];
+        
         require(usedInvoices[invoiceId], "Invoice not financed");
-        require(!financingRecords[invoiceId].repaid, "Already repaid");
-        require(msg.value > 0, "Invalid repayment amount");
+        require(!record.repaid, "Already repaid");
         
-        financingRecords[invoiceId].repaid = true;
-        availableLiquidity += msg.value;
+        uint256 requiredAmount = record.repaymentAmount;
+        uint256 lateFee = 0;
         
-        emit Repayment(invoiceId, msg.sender, msg.value);
+        // Calculate late fee if overdue (1% per day, capped at 30%)
+        if (block.timestamp > record.dueDate) {
+            uint256 daysLate = (block.timestamp - record.dueDate) / 1 days;
+            lateFee = (record.repaymentAmount * daysLate * 100) / 10000; // 1% per day
+            uint256 maxLateFee = (record.repaymentAmount * 3000) / 10000; // Cap at 30%
+            if (lateFee > maxLateFee) lateFee = maxLateFee;
+            requiredAmount += lateFee;
+        }
+        
+        require(msg.value >= requiredAmount, "Insufficient repayment amount");
+        
+        // Calculate interest (difference between repayment and payout)
+        uint256 baseInterest = record.repaymentAmount - record.payoutAmount;
+        uint256 totalInterest = baseInterest + lateFee;
+        
+        // Distribute interest: 90% to LPs, 10% to protocol
+        uint256 protocolFee = (totalInterest * protocolFeeRate) / 10000;
+        uint256 lpInterest = totalInterest - protocolFee;
+        
+        // Mark as repaid
+        record.repaid = true;
+        
+        // Update liquidity (principal + LP share of interest)
+        availableLiquidity += record.payoutAmount + lpInterest;
+        totalPoolSize += lpInterest;
+        totalInterestEarned += totalInterest;
+        
+        // Transfer protocol fee
+        if (protocolFee > 0) {
+            (bool success, ) = protocolFeeReceiver.call{value: protocolFee}("");
+            require(success, "Protocol fee transfer failed");
+        }
+        
+        // Refund excess payment
+        if (msg.value > requiredAmount) {
+            (bool refundSuccess, ) = msg.sender.call{value: msg.value - requiredAmount}("");
+            require(refundSuccess, "Refund failed");
+        }
+        
+        emit Repayment(invoiceId, msg.sender, msg.value, totalInterest, lateFee);
+        emit InterestDistributed(lpInterest, protocolFee);
     }
     
     // ============ Admin Functions ============
@@ -200,6 +254,24 @@ contract ArcPool is ReentrancyGuard, AccessControl, EIP712 {
         grantRole(AEGIS_ROLE, newWallet);
         
         emit AegisWalletUpdated(oldWallet, newWallet);
+    }
+    
+    /**
+     * @notice Update protocol fee rate
+     * @param newRate New fee rate in basis points (10000 = 100%)
+     */
+    function updateProtocolFeeRate(uint256 newRate) external onlyRole(ADMIN_ROLE) {
+        require(newRate <= 5000, "Fee rate cannot exceed 50%");
+        protocolFeeRate = newRate;
+    }
+    
+    /**
+     * @notice Update protocol fee receiver
+     * @param newReceiver New fee receiver address
+     */
+    function updateProtocolFeeReceiver(address newReceiver) external onlyRole(ADMIN_ROLE) {
+        require(newReceiver != address(0), "Invalid receiver address");
+        protocolFeeReceiver = newReceiver;
     }
     
     // ============ View Functions ============
@@ -255,12 +327,25 @@ contract ArcPool is ReentrancyGuard, AccessControl, EIP712 {
     // ============ Fallback Functions ============
     
     /**
-     * @notice Receive function for anonymous USDC deposits
+     * @notice Receive function redirects to deposit()
+     * @dev Any direct transfers are treated as LP deposits
      */
     receive() external payable {
-        totalPoolSize += msg.value;
-        availableLiquidity += msg.value;
-        emit Deposit(msg.sender, msg.value, totalPoolSize);
+        // Redirect to deposit() to ensure proper accounting
+        _processDeposit(msg.sender, msg.value);
+    }
+    
+    /**
+     * @dev Internal function to process deposits
+     */
+    function _processDeposit(address depositor, uint256 amount) private {
+        require(amount > 0, "Amount must be greater than 0");
+        
+        lpDeposits[depositor] += amount;
+        totalPoolSize += amount;
+        availableLiquidity += amount;
+        
+        emit Deposit(depositor, amount, totalPoolSize);
     }
 }
 
