@@ -12,8 +12,10 @@ interface PricingRules {
 
 interface PricingResult {
   payoutAmount: number;
+  repaymentAmount: number;
   discountRate: number;
   riskScore: number;
+  daysUntilDue: number;
   explanation: string;
 }
 
@@ -21,6 +23,8 @@ interface SignatureData {
   signature: string;
   nonce: number;
   deadline: number;
+  repaymentAmount: number;
+  dueDate: number;
 }
 
 @Injectable()
@@ -102,14 +106,19 @@ export class AegisService {
       riskScore,
     );
 
+    // Calculate repayment amount (invoice amount without discount)
+    const repaymentAmount = invoiceAmount;
+    
     this.logger.log(
-      `Pricing calculated: Payout ${payoutAmount}, Discount ${(discountRate * 100).toFixed(2)}%, Risk Score ${riskScore}`,
+      `Pricing calculated: Payout ${payoutAmount}, Repayment ${repaymentAmount}, Discount ${(discountRate * 100).toFixed(2)}%, Risk Score ${riskScore}`,
     );
 
     return {
       payoutAmount: Math.floor(payoutAmount),
+      repaymentAmount: Math.floor(repaymentAmount),
       discountRate: Number(discountRate.toFixed(4)),
       riskScore: Number(riskScore.toFixed(2)),
+      daysUntilDue: daysUntilDue,
       explanation,
     };
   }
@@ -168,14 +177,22 @@ export class AegisService {
 
   /**
    * Generate EIP-712 signature for financing withdrawal
+   * @param invoiceId Unique invoice identifier
+   * @param supplierAddress Supplier's wallet address
+   * @param payoutAmount Amount to pay out immediately (in USDC)
+   * @param repaymentAmount Amount that must be repaid (includes interest, in USDC)
+   * @param daysUntilDue Number of days until repayment is due
    */
   async generateFinancingSignature(
     invoiceId: string,
     supplierAddress: string,
     payoutAmount: number,
+    repaymentAmount: number,
+    daysUntilDue: number,
   ): Promise<SignatureData> {
     const nonce = Date.now();
-    const deadline = Math.floor(Date.now() / 1000) + 3600; // 1 hour expiry
+    const deadline = Math.floor(Date.now() / 1000) + 3600; // 1 hour expiry for signature
+    const dueDate = Math.floor(Date.now() / 1000) + (daysUntilDue * 24 * 60 * 60); // Convert days to seconds
 
     const contractAddress = this.configService.get<string>(
       'ARC_CONTRACT_ADDRESS',
@@ -191,28 +208,30 @@ export class AegisService {
       verifyingContract: contractAddress,
     };
 
-    // EIP-712 Types
+    // EIP-712 Types (Updated to match new contract)
     const types = {
       FinancingRequest: [
         { name: 'invoiceId', type: 'bytes32' },
         { name: 'supplier', type: 'address' },
         { name: 'payoutAmount', type: 'uint256' },
+        { name: 'repaymentAmount', type: 'uint256' },
+        { name: 'dueDate', type: 'uint256' },
         { name: 'nonce', type: 'uint256' },
         { name: 'deadline', type: 'uint256' },
       ],
     };
 
-    // Convert payout amount to Wei (6 decimals for USDC)
-    const payoutAmountWei = ethers.parseUnits(
-      payoutAmount.toString(),
-      6,
-    );
+    // Convert amounts to Wei (6 decimals for USDC)
+    const payoutAmountWei = ethers.parseUnits(payoutAmount.toString(), 6);
+    const repaymentAmountWei = ethers.parseUnits(repaymentAmount.toString(), 6);
 
     // Values
     const values = {
       invoiceId: ethers.id(invoiceId),
       supplier: supplierAddress,
       payoutAmount: payoutAmountWei,
+      repaymentAmount: repaymentAmountWei,
+      dueDate: dueDate,
       nonce: nonce,
       deadline: deadline,
     };
@@ -228,12 +247,16 @@ export class AegisService {
     const wallet = new ethers.Wallet(privateKey);
     const signature = await wallet.signTypedData(domain, types, values);
 
-    this.logger.log(`Generated signature for invoice ${invoiceId}`);
+    this.logger.log(
+      `Generated signature for invoice ${invoiceId}: Payout ${payoutAmount} USDC, Repayment ${repaymentAmount} USDC, Due in ${daysUntilDue} days`,
+    );
 
     return {
       signature,
       nonce,
       deadline,
+      repaymentAmount,
+      dueDate,
     };
   }
 
@@ -263,13 +286,16 @@ export class AegisService {
         { name: 'invoiceId', type: 'bytes32' },
         { name: 'supplier', type: 'address' },
         { name: 'payoutAmount', type: 'uint256' },
+        { name: 'repaymentAmount', type: 'uint256' },
+        { name: 'dueDate', type: 'uint256' },
         { name: 'nonce', type: 'uint256' },
         { name: 'deadline', type: 'uint256' },
       ],
     };
 
-    const payoutAmountWei = ethers.parseUnits(
-      payoutAmount.toString(),
+    const payoutAmountWei = ethers.parseUnits(payoutAmount.toString(), 6);
+    const repaymentAmountWei = ethers.parseUnits(
+      signatureData.repaymentAmount.toString(),
       6,
     );
 
@@ -277,6 +303,8 @@ export class AegisService {
       invoiceId: ethers.id(invoiceId),
       supplier: supplierAddress,
       payoutAmount: payoutAmountWei,
+      repaymentAmount: repaymentAmountWei,
+      dueDate: signatureData.dueDate,
       nonce: signatureData.nonce,
       deadline: signatureData.deadline,
     };
