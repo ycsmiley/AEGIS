@@ -4,7 +4,7 @@ import { defineChain } from "viem";
 
 // Arc Testnet Configuration (Wagmi v2 + Viem)
 export const arcTestnet = defineChain({
-  id: 421614, // Arc Testnet Chain ID (update with official value when available)
+  id: 5042002, // Arc Testnet Chain ID
   name: "Arc Testnet",
   nativeCurrency: {
     decimals: 6, // USDC has 6 decimals
