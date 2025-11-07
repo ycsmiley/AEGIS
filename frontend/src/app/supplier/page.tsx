@@ -56,6 +56,7 @@ export default function SupplierPortal() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
 
   const supabase = createClient();
   const contractAddress = process.env.NEXT_PUBLIC_ARC_CONTRACT_ADDRESS as `0x${string}` || '0x';
@@ -72,8 +73,14 @@ export default function SupplierPortal() {
   });
 
   useEffect(() => {
-    loadInvoices();
-  }, [address]);
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted) {
+      loadInvoices();
+    }
+  }, [address, mounted]);
 
   const loadInvoices = async () => {
     try {
@@ -167,6 +174,11 @@ export default function SupplierPortal() {
       .reduce((sum, i) => sum + (i.aegis_payout_offer || 0), 0),
     averageRate: 8.5, // TODO: Calculate from actual data
   };
+
+  // Prevent hydration mismatch by not rendering until mounted
+  if (!mounted) {
+    return null;
+  }
 
   if (!isConnected) {
     return (

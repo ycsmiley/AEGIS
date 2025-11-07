@@ -61,6 +61,7 @@ export default function BuyerPortal() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
 
   const supabase = createClient();
   const contractAddress = process.env.NEXT_PUBLIC_ARC_CONTRACT_ADDRESS as `0x${string}` || '0x';
@@ -76,8 +77,14 @@ export default function BuyerPortal() {
   });
 
   useEffect(() => {
-    loadInvoices();
-  }, [address]);
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted) {
+      loadInvoices();
+    }
+  }, [address, mounted]);
 
   useEffect(() => {
     if (isSuccess) {
@@ -195,6 +202,11 @@ export default function BuyerPortal() {
     (sum, inv) => sum + (inv.amount || 0),
     0
   );
+
+  // Prevent hydration mismatch by not rendering until mounted
+  if (!mounted) {
+    return null;
+  }
 
   if (!isConnected) {
     return (
