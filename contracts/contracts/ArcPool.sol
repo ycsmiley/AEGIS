@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
@@ -62,9 +62,9 @@ contract ArcPool is ReentrancyGuard, AccessControl, EIP712 {
         require(_aegisServerWallet != address(0), "Invalid Aegis wallet");
         aegisServerWallet = _aegisServerWallet;
         
-        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _setupRole(ADMIN_ROLE, msg.sender);
-        _setupRole(AEGIS_ROLE, _aegisServerWallet);
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(ADMIN_ROLE, msg.sender);
+        _grantRole(AEGIS_ROLE, _aegisServerWallet);
         
         // If deployed with initial liquidity
         if (msg.value > 0) {
