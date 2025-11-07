@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Stat } from '@/components/ui/stat';
+import { CreateInvoiceDialog } from '@/components/CreateInvoiceDialog';
 import ArcPoolABI from '@/contracts/ArcPool.json';
 import {
   Plus,
@@ -20,7 +21,8 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  Loader2
+  Loader2,
+  Sparkles
 } from 'lucide-react';
 
 type Invoice = Database['public']['Tables']['invoices']['Row'];
@@ -95,35 +97,55 @@ export default function SupplierPortal() {
   };
 
   const handleAcceptFinancing = async (invoice: Invoice) => {
-    if (!invoice.aegis_signature || !invoice.aegis_payout_offer) {
-      setError('Invalid invoice signature or payout offer');
-      return;
-    }
+    setError(null);
 
     try {
-      const signatureData = JSON.parse(invoice.aegis_signature);
+      // 1. Get signature from backend if not already available
+      if (!invoice.aegis_signature) {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+        const signResponse = await fetch(`${apiUrl}/api/invoices/${invoice.id}/sign`, {
+          method: 'POST',
+        });
 
+        const signResult = await signResponse.json();
+        if (!signResult.success) {
+          throw new Error(signResult.message || 'Failed to get Aegis signature');
+        }
+
+        // Update local invoice data
+        invoice.aegis_signature = signResult.data.signature;
+        invoice.aegis_nonce = signResult.data.nonce;
+        invoice.aegis_deadline = signResult.data.deadline;
+        invoice.aegis_due_date = signResult.data.dueDate;
+      }
+
+      if (!invoice.aegis_payout_offer || !invoice.aegis_repayment_amount) {
+        throw new Error('Invalid invoice pricing data');
+      }
+
+      // 2. Call smart contract
       await writeContract({
         address: contractAddress,
         abi: ArcPoolABI,
         functionName: 'withdrawFinancing',
         args: [
-          hashString(invoice.id),
+          hashString(invoice.invoice_number),
           parseUnits(invoice.aegis_payout_offer.toString(), 6),
-          parseUnits(signatureData.repaymentAmount.toString(), 6),
-          BigInt(signatureData.dueDate),
-          BigInt(signatureData.nonce),
-          BigInt(signatureData.deadline),
-          signatureData.signature as `0x${string}`,
+          parseUnits(invoice.aegis_repayment_amount.toString(), 6),
+          BigInt(invoice.aegis_due_date || 0),
+          BigInt(invoice.aegis_nonce || 0),
+          BigInt(invoice.aegis_deadline || 0),
+          invoice.aegis_signature as `0x${string}`,
         ],
       });
 
-      if (isSuccess) {
+      // 3. Update database status on success
+      if (isSuccess && hash) {
         await supabase
           .from('invoices')
           .update({
             status: 'FINANCED',
-            blockchain_tx_hash: hash,
+            financing_tx_hash: hash,
           })
           .eq('id', invoice.id);
 
@@ -170,12 +192,9 @@ export default function SupplierPortal() {
         <div className="mb-8 flex items-center justify-between">
           <div>
             <h1 className="text-4xl font-bold text-white mb-2">Supplier Portal</h1>
-            <p className="text-neutral-400">Upload invoices and get instant financing offers</p>
+            <p className="text-neutral-400">Create invoices and get AI-powered financing offers</p>
           </div>
-          <Button size="lg" className="gap-2">
-            <Plus className="h-5 w-5" />
-            Upload Invoice
-          </Button>
+          <CreateInvoiceDialog onInvoiceCreated={loadInvoices} />
         </div>
 
         {/* Error/Success Messages */}
@@ -247,9 +266,9 @@ export default function SupplierPortal() {
                   <Card key={invoice.id} className="hover:border-neutral-600 transition-colors">
                     <CardHeader>
                       <div className="flex items-start justify-between">
-                        <div>
-                          <CardTitle className="text-lg">{invoice.id}</CardTitle>
-                          <CardDescription>Buyer: {invoice.buyer_id}</CardDescription>
+                        <div className="flex-1">
+                          <CardTitle className="text-lg">{invoice.invoice_number || invoice.id}</CardTitle>
+                          <CardDescription>Buyer: {invoice.buyer_address?.slice(0, 10)}...</CardDescription>
                         </div>
                         <Badge variant="success">
                           <CheckCircle className="h-3 w-3 mr-1" />
@@ -262,18 +281,44 @@ export default function SupplierPortal() {
                         <div>
                           <p className="text-sm text-neutral-400 mb-1">Invoice Amount</p>
                           <p className="text-xl font-bold text-white">
-                            ${invoice.amount.toLocaleString()}
+                            ${invoice.amount?.toLocaleString()} USDC
                           </p>
                         </div>
                         <div>
-                          <p className="text-sm text-neutral-400 mb-1">Financing Offer</p>
+                          <p className="text-sm text-neutral-400 mb-1">You Receive</p>
                           <p className="text-xl font-bold text-green-400">
-                            ${invoice.aegis_payout_offer?.toLocaleString()}
+                            ${invoice.aegis_payout_offer?.toLocaleString()} USDC
                           </p>
                         </div>
                       </div>
 
+                      {/* AI Pricing Explanation */}
+                      {invoice.aegis_pricing_explanation && (
+                        <div className="p-3 bg-neutral-900/50 border border-neutral-800 rounded">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Sparkles className="h-4 w-4 text-yellow-400" />
+                            <p className="text-xs font-semibold text-yellow-400">AI Pricing Analysis</p>
+                          </div>
+                          <pre className="text-xs text-neutral-300 whitespace-pre-wrap font-mono">
+                            {invoice.aegis_pricing_explanation}
+                          </pre>
+                          {invoice.aegis_risk_score !== null && (
+                            <div className="mt-2 pt-2 border-t border-neutral-800">
+                              <p className="text-xs text-neutral-400">
+                                Risk Score: <span className="text-white font-semibold">{invoice.aegis_risk_score}/100</span>
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                       <div className="flex items-center justify-between pt-4 border-t border-neutral-800">
+                        <div>
+                          <p className="text-xs text-neutral-500">Discount Rate</p>
+                          <p className="text-sm font-semibold text-white">
+                            {invoice.aegis_discount_rate ? (invoice.aegis_discount_rate * 100).toFixed(2) : '0'}%
+                          </p>
+                        </div>
                         <div>
                           <p className="text-xs text-neutral-500">Due Date</p>
                           <p className="text-sm font-semibold text-white">

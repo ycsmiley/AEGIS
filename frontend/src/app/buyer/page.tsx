@@ -111,16 +111,18 @@ export default function BuyerPortal() {
       setError(null);
       setSuccessMessage(null);
 
-      // In a real implementation, this would call backend API to approve invoice
-      // Backend would generate Aegis signature and update database
-      const { error: updateError } = await supabase
-        .from('invoices')
-        .update({ status: 'APPROVED' })
-        .eq('id', invoiceId);
+      // Call backend API to approve invoice and generate Aegis signature
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const response = await fetch(`${apiUrl}/api/invoices/${invoiceId}/approve`, {
+        method: 'POST',
+      });
 
-      if (updateError) throw updateError;
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.message || 'Failed to approve invoice');
+      }
 
-      setSuccessMessage('Invoice approved successfully!');
+      setSuccessMessage('Invoice approved! Aegis signature generated.');
       loadInvoices();
     } catch (err) {
       console.error('Error approving invoice:', err);
