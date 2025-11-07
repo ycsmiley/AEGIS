@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi';
+import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { parseUnits, formatUnits } from 'viem';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -24,6 +25,7 @@ import {
 
 export default function LPPortal() {
   const { address, isConnected } = useAccount();
+  const { openConnectModal } = useConnectModal();
   const [depositAmount, setDepositAmount] = useState('');
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -157,7 +159,7 @@ export default function LPPortal() {
             <p className="text-neutral-400 mb-6">
               Please connect your wallet to access the LP Portal
             </p>
-            <Button size="lg">Connect Wallet</Button>
+            <Button size="lg" onClick={openConnectModal}>Connect Wallet</Button>
           </CardContent>
         </Card>
       </div>

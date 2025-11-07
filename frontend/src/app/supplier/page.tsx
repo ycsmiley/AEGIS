@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { parseUnits, id as hashString } from 'viem';
 import { createClient } from '@/lib/supabase/client';
 import { Database } from '@/lib/supabase/types';
@@ -49,6 +50,7 @@ const statusConfig = {
 
 export default function SupplierPortal() {
   const { address, isConnected } = useAccount();
+  const { openConnectModal } = useConnectModal();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -154,7 +156,7 @@ export default function SupplierPortal() {
             <p className="text-neutral-400 mb-6">
               Please connect your wallet to access the Supplier Portal
             </p>
-            <Button size="lg">Connect Wallet</Button>
+            <Button size="lg" onClick={openConnectModal}>Connect Wallet</Button>
           </CardContent>
         </Card>
       </div>
