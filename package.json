@@ -1,0 +1,39 @@
+{
+  "name": "aegis-finance",
+  "version": "1.0.0",
+  "description": "Arc-native supply chain finance platform with AI-powered dynamic pricing",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend",
+    "contracts"
+  ],
+  "scripts": {
+    "dev": "concurrently \"pnpm run dev:frontend\" \"pnpm run dev:backend\"",
+    "dev:frontend": "cd frontend && pnpm run dev",
+    "dev:backend": "cd backend && pnpm run start:dev",
+    "build": "pnpm run build:frontend && pnpm run build:backend",
+    "build:frontend": "cd frontend && pnpm run build",
+    "build:backend": "cd backend && pnpm run build",
+    "test": "pnpm run test:contracts && pnpm run test:backend && pnpm run test:frontend",
+    "test:contracts": "cd contracts && npx hardhat test",
+    "test:backend": "cd backend && pnpm run test",
+    "test:frontend": "cd frontend && pnpm run test",
+    "deploy:contracts": "cd contracts && npx hardhat run scripts/deploy-arc.js --network arcTestnet",
+    "setup": "pnpm install && cd frontend && pnpm install && cd ../backend && pnpm install && cd ../contracts && npm install"
+  },
+  "keywords": [
+    "arc",
+    "usdc",
+    "supply-chain-finance",
+    "defi",
+    "ai-agent",
+    "invoice-financing"
+  ],
+  "author": "Aegis Finance Team",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
+
