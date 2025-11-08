@@ -172,7 +172,7 @@ export default function BuyerPortal() {
         address: contractAddress,
         abi: ArcPoolABI,
         functionName: 'repay',
-        args: [parseUnits(invoice.amount.toString(), 6)],
+        args: [parseUnits(invoice.amount.toString(), 18)],
       });
 
       if (isSuccess) {

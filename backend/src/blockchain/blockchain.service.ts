@@ -125,13 +125,13 @@ export class BlockchainService implements OnModuleInit {
     // Listen to Deposit events
     this.contract.on('Deposit', (lp, amount, newTotal, event) => {
       this.logger.log(
-        `Deposit event: LP ${lp}, Amount ${ethers.formatUnits(amount, 6)} USDC`,
+        `Deposit event: LP ${lp}, Amount ${ethers.formatUnits(amount, 18)} USDC`,
       );
       callback({
         type: 'DEPOSIT',
         lp,
-        amount: ethers.formatUnits(amount, 6),
-        newTotal: ethers.formatUnits(newTotal, 6),
+        amount: ethers.formatUnits(amount, 18),
+        newTotal: ethers.formatUnits(newTotal, 18),
         transactionHash: event.log.transactionHash,
       });
     });
@@ -141,13 +141,13 @@ export class BlockchainService implements OnModuleInit {
       'FinancingWithdrawn',
       (invoiceId, supplier, amount, timestamp, event) => {
         this.logger.log(
-          `Financing event: Invoice ${invoiceId}, Supplier ${supplier}, Amount ${ethers.formatUnits(amount, 6)} USDC`,
+          `Financing event: Invoice ${invoiceId}, Supplier ${supplier}, Amount ${ethers.formatUnits(amount, 18)} USDC`,
         );
         callback({
           type: 'FINANCING',
           invoiceId,
           supplier,
-          amount: ethers.formatUnits(amount, 6),
+          amount: ethers.formatUnits(amount, 18),
           timestamp,
           transactionHash: event.log.transactionHash,
         });
@@ -180,14 +180,14 @@ export class BlockchainService implements OnModuleInit {
    * Format USDC amount (6 decimals)
    */
   formatUSDC(amount: bigint): string {
-    return ethers.formatUnits(amount, 6);
+    return ethers.formatUnits(amount, 18);
   }
 
   /**
    * Parse USDC amount (6 decimals)
    */
   parseUSDC(amount: string): bigint {
-    return ethers.parseUnits(amount, 6);
+    return ethers.parseUnits(amount, 18);
   }
 }
 

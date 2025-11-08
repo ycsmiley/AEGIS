@@ -323,8 +323,8 @@ Respond with only a single number between 0-100 representing the creditworthines
     };
 
     // Convert amounts to Wei (6 decimals for USDC)
-    const payoutAmountWei = ethers.parseUnits(payoutAmount.toString(), 6);
-    const repaymentAmountWei = ethers.parseUnits(repaymentAmount.toString(), 6);
+    const payoutAmountWei = ethers.parseUnits(payoutAmount.toString(), 18);
+    const repaymentAmountWei = ethers.parseUnits(repaymentAmount.toString(), 18);
 
     // Values
     const values = {
@@ -394,7 +394,7 @@ Respond with only a single number between 0-100 representing the creditworthines
       ],
     };
 
-    const payoutAmountWei = ethers.parseUnits(payoutAmount.toString(), 6);
+    const payoutAmountWei = ethers.parseUnits(payoutAmount.toString(), 18);
     const repaymentAmountWei = ethers.parseUnits(
       signatureData.repaymentAmount.toString(),
       6,

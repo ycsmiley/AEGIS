@@ -137,8 +137,8 @@ export default function SupplierPortal() {
         functionName: 'withdrawFinancing',
         args: [
           hashString(invoice.invoice_number),
-          parseUnits(invoice.aegis_payout_offer.toString(), 6),
-          parseUnits(invoice.aegis_repayment_amount.toString(), 6),
+          parseUnits(invoice.aegis_payout_offer.toString(), 18),
+          parseUnits(invoice.aegis_repayment_amount.toString(), 18),
           BigInt(invoice.aegis_due_date || 0),
           BigInt(invoice.aegis_nonce || 0),
           BigInt(invoice.aegis_deadline || 0),
