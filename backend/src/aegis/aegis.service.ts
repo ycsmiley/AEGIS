@@ -48,7 +48,7 @@ export class AegisService {
     const hfToken = this.configService.get<string>('HUGGINGFACE_API_TOKEN');
     if (hfToken) {
       this.hf = new HfInference(hfToken);
-      this.logger.log('Hugging Face AI integration enabled');
+      this.logger.log('Hugging Face AI integration enabled for Mistral models');
     } else {
       this.logger.warn('Hugging Face token not found - using rule-based risk scoring only');
     }
@@ -156,7 +156,7 @@ export class AegisService {
   }
 
   /**
-   * Calculate AI-powered risk score using Hugging Face
+   * Calculate AI-powered risk score using Mistral via Hugging Face
    * Returns a score from 0-100 (higher is better/lower risk)
    */
   private async calculateAIRiskScore(
@@ -172,55 +172,70 @@ export class AegisService {
     }
 
     try {
-      this.logger.debug('Requesting AI risk prediction from Hugging Face...');
+      this.logger.debug('Requesting AI risk prediction from Mistral via Hugging Face...');
 
-      // Create a descriptive prompt for semantic analysis
-      const prompt = `High creditworthiness invoice financing with excellent buyer rating ${buyerRating} out of 100, strong supplier rating ${supplierRating} out of 100, invoice amount ${invoiceAmount} USD, payment term ${daysUntilDue} days, and ${liquidityRatio > 0.7 ? 'abundant' : liquidityRatio > 0.3 ? 'moderate' : 'limited'} market liquidity. Low default risk, strong repayment capacity.`;
+      // Create a detailed prompt for Mistral to analyze credit risk
+      const prompt = `You are a financial risk analyst specializing in invoice financing and credit risk assessment.
 
-      // Use sentence transformers for semantic embedding
-      this.logger.debug('Using sentence-transformers for AI analysis...');
+Analyze the following invoice financing scenario and provide a creditworthiness score from 0 to 100, where 100 represents the safest investment with lowest default risk, and 0 represents highest risk.
 
-      const result = await this.hf.featureExtraction({
-        model: 'sentence-transformers/all-MiniLM-L6-v2',
+Invoice Details:
+- Invoice Amount: $${invoiceAmount} USD
+- Payment Term: ${daysUntilDue} days
+- Buyer Credit Rating: ${buyerRating}/100
+- Supplier Credit Rating: ${supplierRating}/100
+- Market Liquidity: ${liquidityRatio > 0.7 ? 'Abundant (>70%)' : liquidityRatio > 0.3 ? 'Moderate (30-70%)' : 'Limited (<30%)'}
+
+Consider these factors in your analysis:
+1. Creditworthiness of both buyer and supplier
+2. Payment term length and time value of money
+3. Market liquidity conditions
+4. Default risk probability
+5. Industry standards for invoice financing
+
+Respond with ONLY a single number between 0 and 100 representing the credit risk score. Do not include any explanation, just the number.`;
+
+      // Try using Mistral Small via Hugging Face
+      const result = await this.hf.textGeneration({
+        model: 'mistralai/Mistral-Small-24B-Instruct-2501',
         inputs: prompt,
+        parameters: {
+          max_new_tokens: 10,
+          temperature: 0.3,
+          return_full_text: false,
+        },
       });
 
-      // Convert embeddings to risk score
-      // The model returns a 384-dimensional embedding vector
-      // We'll calculate a risk score based on the embedding's characteristics
-      const embeddings = Array.isArray(result) ? result : [result];
-      const flatEmbeddings = embeddings.flat() as number[];
+      const responseContent = result.generated_text?.trim();
 
-      // Calculate mean and variance of embeddings
-      const mean = flatEmbeddings.reduce((sum, val) => sum + (val as number), 0) / flatEmbeddings.length;
-      const variance = flatEmbeddings.reduce((sum, val) => sum + Math.pow((val as number) - mean, 2), 0) / flatEmbeddings.length;
+      if (!responseContent) {
+        this.logger.warn('No response from Mistral');
+        return null;
+      }
 
-      // Combine with input parameters to derive risk score
-      // Higher buyer/supplier ratings = higher score
-      // More positive embedding mean = higher score
-      // Lower variance = more consistent/predictable = higher score
-      const ratingComponent = (buyerRating + supplierRating) / 2;
-      const liquidityComponent = Math.min(100, liquidityRatio * 100);
-      const termComponent = Math.max(0, 100 - (daysUntilDue / 90) * 30); // Penalty for longer terms
+      this.logger.debug(`Mistral raw response: ${responseContent}`);
 
-      // AI component: normalize embedding characteristics
-      const embeddingScore = Math.max(0, Math.min(100, (mean + 0.5) * 100)); // Shift and scale
-      const consistencyBonus = Math.max(0, 10 - variance * 50); // Low variance = consistency bonus
+      // Extract number from response
+      const numberMatch = responseContent.match(/(\d+(?:\.\d+)?)/);
 
-      // Weighted combination
-      const aiRiskScore = (
-        ratingComponent * 0.35 +        // 35% weight on credit ratings
-        liquidityComponent * 0.20 +     // 20% weight on liquidity
-        termComponent * 0.15 +          // 15% weight on term length
-        embeddingScore * 0.25 +         // 25% weight on AI embedding
-        consistencyBonus * 0.05         // 5% weight on consistency
-      );
+      if (!numberMatch) {
+        this.logger.warn(`No number found in Mistral response: ${responseContent}`);
+        return null;
+      }
 
-      const normalizedScore = Math.max(0, Math.min(100, Math.round(aiRiskScore)));
-      this.logger.log(`AI risk score: ${normalizedScore}/100 (embedding mean: ${mean.toFixed(4)}, variance: ${variance.toFixed(4)})`);
+      const score = parseFloat(numberMatch[1]);
+
+      if (isNaN(score)) {
+        this.logger.warn(`Invalid score from Mistral: ${numberMatch[1]}`);
+        return null;
+      }
+
+      // Normalize score to 0-100 range
+      const normalizedScore = Math.max(0, Math.min(100, Math.round(score)));
+      this.logger.log(`Mistral AI risk score: ${normalizedScore}/100`);
       return normalizedScore;
     } catch (error) {
-      this.logger.error('HF AI risk prediction failed:', error.message);
+      this.logger.error('Mistral AI risk prediction failed:', error.message);
       return null;
     }
   }
@@ -285,7 +300,7 @@ export class AegisService {
     if (aiRiskScore !== null) {
       parts.push(`• AI risk prediction: ${aiRiskScore.toFixed(0)}/100`);
       parts.push(
-        `• Analysis powered by Hugging Face Sentence Transformers`,
+        `• Analysis powered by Mistral AI`,
       );
     }
 
