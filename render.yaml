@@ -1,0 +1,128 @@
+# =============================================================================
+# Render.com Configuration for Aegis Finance Backend
+# =============================================================================
+# This file enables Infrastructure as Code deployment on Render.com
+# Alternative: You can also deploy via Render Dashboard (more visual)
+# =============================================================================
+
+services:
+  # Backend API Service
+  - type: web
+    name: aegis-finance-backend
+    runtime: node
+    # ⚠️ IMPORTANT: Specify the backend directory in monorepo
+    rootDir: backend
+    env: node
+    region: oregon # Change to your preferred region: oregon, frankfurt, singapore
+    plan: free
+    branch: main # Change to your deployment branch if different
+
+    # Build Configuration
+    buildCommand: npm install && npm run build
+    startCommand: npm run start:prod
+
+    # Health Check
+    healthCheckPath: /api/health
+
+    # Auto-Deploy
+    autoDeploy: true
+
+    # Environment Variables
+    # ⚠️ Set these in Render Dashboard for security (not here)
+    envVars:
+      - key: NODE_ENV
+        value: production
+
+      - key: PORT
+        value: 3001
+
+      # Frontend URL (will be your Vercel URL)
+      - key: FRONTEND_URL
+        sync: false # Set manually in dashboard
+
+      # Supabase
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+
+      # JWT Secret
+      - key: JWT_SECRET
+        generateValue: true # Render auto-generates secure random value
+
+      # Aegis Server Wallet
+      - key: SERVER_WALLET_PRIVATE_KEY
+        sync: false # ⚠️ CRITICAL: Set in dashboard, keep secret
+      - key: AEGIS_SERVER_WALLET
+        sync: false
+
+      # Arc Blockchain
+      - key: ARC_RPC_URL
+        value: https://rpc.testnet.arc.network
+      - key: ARC_CONTRACT_ADDRESS
+        value: "0x8080900fD63d6C7e4E716D1cb65F1071e98cD14C"
+      - key: ARC_CHAIN_ID
+        value: "5042002"
+
+      # Mistral AI
+      - key: MISTRAL_API_KEY
+        sync: false # Set in dashboard
+
+# =============================================================================
+# DEPLOYMENT INSTRUCTIONS
+# =============================================================================
+#
+# Option 1: Using Render Dashboard (Recommended for first-time)
+# --------------------------------------------------------------
+# 1. Go to https://dashboard.render.com/
+# 2. Click "New +" → "Web Service"
+# 3. Connect your GitHub repository
+# 4. Configure:
+#    - Name: aegis-finance-backend
+#    - Root Directory: backend
+#    - Environment: Node
+#    - Build Command: npm install && npm run build
+#    - Start Command: npm run start:prod
+# 5. Add environment variables from the list above
+# 6. Click "Create Web Service"
+#
+# Option 2: Using this render.yaml file
+# --------------------------------------
+# 1. Push this file to your GitHub repo
+# 2. Go to https://dashboard.render.com/
+# 3. Click "New +" → "Blueprint"
+# 4. Connect your repository
+# 5. Render will auto-detect this render.yaml
+# 6. Review and confirm
+# 7. Set sensitive environment variables in dashboard
+#
+# =============================================================================
+# AFTER DEPLOYMENT
+# =============================================================================
+#
+# 1. Your backend URL will be: https://aegis-finance-backend.onrender.com
+# 2. Update Vercel environment variable:
+#    NEXT_PUBLIC_API_URL=https://aegis-finance-backend.onrender.com
+# 3. Test the health endpoint:
+#    curl https://aegis-finance-backend.onrender.com/api/health
+#
+# =============================================================================
+# PREVENTING SLEEP (Free Plan)
+# =============================================================================
+#
+# Free tier sleeps after 15 minutes of inactivity.
+# Solution: Use a free cron job service to ping every 10 minutes
+#
+# Option A: cron-job.org
+# 1. Go to https://cron-job.org/
+# 2. Create free account
+# 3. Create job: https://aegis-finance-backend.onrender.com/api/health
+# 4. Schedule: Every 10 minutes
+#
+# Option B: UptimeRobot
+# 1. Go to https://uptimerobot.com/
+# 2. Create free account
+# 3. Add monitor: https://aegis-finance-backend.onrender.com/api/health
+# 4. Interval: 5 minutes (free tier)
+#
+# =============================================================================
