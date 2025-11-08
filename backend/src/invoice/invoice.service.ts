@@ -238,7 +238,55 @@ export class InvoiceService {
       throw new Error('Supabase not configured');
     }
 
-    // 1. Update status to APPROVED
+    // 1. Fetch invoice to check if pricing needs recalculation
+    const { data: invoice, error: fetchError } = await this.supabase
+      .from('invoices')
+      .select('*')
+      .eq('id', invoiceId)
+      .single();
+
+    if (fetchError || !invoice) {
+      throw new NotFoundException(`Invoice ${invoiceId} not found`);
+    }
+
+    // 2. If pricing is missing or invalid (e.g., from Math.floor bug), recalculate
+    if (!invoice.aegis_payout_offer || invoice.aegis_payout_offer <= 0 ||
+        !invoice.aegis_repayment_amount || invoice.aegis_repayment_amount <= 0) {
+      this.logger.warn(
+        `Invoice ${invoiceId} has invalid pricing (payout: ${invoice.aegis_payout_offer}, repayment: ${invoice.aegis_repayment_amount}). Recalculating...`
+      );
+
+      const pricing = await this.aegisService.calculateDynamicPricing(
+        invoice.amount,
+        new Date(invoice.due_date),
+        75, // Default buyer rating
+        75, // Default supplier rating
+      );
+
+      // Update pricing in database
+      const { error: pricingError } = await this.supabase
+        .from('invoices')
+        .update({
+          aegis_payout_offer: pricing.payoutAmount,
+          aegis_repayment_amount: pricing.repaymentAmount,
+          aegis_discount_rate: pricing.discountRate,
+          aegis_risk_score: pricing.riskScore,
+          aegis_pricing_explanation: pricing.explanation,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', invoiceId);
+
+      if (pricingError) {
+        this.logger.error('Failed to update pricing', pricingError);
+        throw new Error(`Failed to recalculate pricing: ${pricingError.message}`);
+      }
+
+      this.logger.log(
+        `Recalculated pricing for invoice ${invoiceId}: Payout ${pricing.payoutAmount} USDC, Discount ${(pricing.discountRate * 100).toFixed(2)}%`
+      );
+    }
+
+    // 3. Update status to APPROVED
     const { data, error } = await this.supabase
       .from('invoices')
       .update({
@@ -254,7 +302,7 @@ export class InvoiceService {
       throw new Error(`Failed to approve invoice: ${error.message}`);
     }
 
-    // 2. Generate signature automatically
+    // 4. Generate signature automatically
     try {
       await this.generateFinancingSignature(invoiceId);
     } catch (err) {
