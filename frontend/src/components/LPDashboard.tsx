@@ -26,15 +26,15 @@ export function LPDashboard({ contractAddress }: LPDashboardProps) {
 
   const poolStatus = poolStatusData && Array.isArray(poolStatusData)
     ? {
-        total: Number(formatUnits(poolStatusData[0] as bigint, 6)),
-        available: Number(formatUnits(poolStatusData[1] as bigint, 6)),
-        utilized: Number(formatUnits(poolStatusData[2] as bigint, 6)),
-        financed: Number(formatUnits(poolStatusData[3] as bigint, 6)),
+        total: Number(formatUnits(poolStatusData[0] as bigint, 18)),
+        available: Number(formatUnits(poolStatusData[1] as bigint, 18)),
+        utilized: Number(formatUnits(poolStatusData[2] as bigint, 18)),
+        financed: Number(formatUnits(poolStatusData[3] as bigint, 18)),
       }
     : null;
 
   const totalInterest = interestEarnedData
-    ? Number(formatUnits(interestEarnedData as bigint, 6))
+    ? Number(formatUnits(interestEarnedData as bigint, 18))
     : 0;
 
   const lpInterest = totalInterest * 0.9; // LPs get 90%

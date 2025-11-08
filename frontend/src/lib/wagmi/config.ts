@@ -7,7 +7,7 @@ export const arcTestnet = defineChain({
   id: 5042002, // Arc Testnet Chain ID
   name: "Arc Testnet",
   nativeCurrency: {
-    decimals: 6, // USDC has 6 decimals
+    decimals: 18, // Arc uses 18 decimals for native USDC (not ERC20 6 decimals)
     name: "USD Coin",
     symbol: "USDC",
   },

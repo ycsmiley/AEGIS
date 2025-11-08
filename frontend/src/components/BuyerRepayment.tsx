@@ -50,7 +50,7 @@ export function BuyerRepayment({ invoiceId, contractAddress }: RepaymentProps) {
 
       const now = Math.floor(Date.now() / 1000);
       const dueDate = Number(dueDateBN);
-      const repaymentAmountNum = Number(formatUnits(repaymentAmountBN as bigint, 6));
+      const repaymentAmountNum = Number(formatUnits(repaymentAmountBN as bigint, 18));
 
       setRepaymentAmount(repaymentAmountNum);
 
@@ -74,7 +74,7 @@ export function BuyerRepayment({ invoiceId, contractAddress }: RepaymentProps) {
 
   const handleRepay = async () => {
     try {
-      const totalDueBigInt = parseUnits(totalDue.toFixed(6), 6);
+      const totalDueBigInt = parseUnits(totalDue.toFixed(6), 18);
 
       writeContract({
         address: contractAddress,

@@ -59,18 +59,18 @@ export default function LPPortal() {
     functionName: 'totalInterestEarned',
   });
 
-  const lpBalance = lpBalanceData ? Number(formatUnits(lpBalanceData as bigint, 6)) : 0;
+  const lpBalance = lpBalanceData ? Number(formatUnits(lpBalanceData as bigint, 18)) : 0;
 
   const poolStatus = poolStatusData && Array.isArray(poolStatusData)
     ? {
-        total: Number(formatUnits(poolStatusData[0] as bigint, 6)),
-        available: Number(formatUnits(poolStatusData[1] as bigint, 6)),
-        utilized: Number(formatUnits(poolStatusData[2] as bigint, 6)),
-        financed: Number(formatUnits(poolStatusData[3] as bigint, 6)),
+        total: Number(formatUnits(poolStatusData[0] as bigint, 18)),
+        available: Number(formatUnits(poolStatusData[1] as bigint, 18)),
+        utilized: Number(formatUnits(poolStatusData[2] as bigint, 18)),
+        financed: Number(formatUnits(poolStatusData[3] as bigint, 18)),
       }
     : null;
 
-  const totalInterest = interestEarnedData ? Number(formatUnits(interestEarnedData as bigint, 6)) : 0;
+  const totalInterest = interestEarnedData ? Number(formatUnits(interestEarnedData as bigint, 18)) : 0;
   const lpInterest = totalInterest * 0.9;
   const utilizationRate = poolStatus && poolStatus.total > 0
     ? (poolStatus.utilized / poolStatus.total) * 100
@@ -109,7 +109,7 @@ export default function LPPortal() {
 
     try {
       setError(null);
-      const amountInWei = parseUnits(depositAmount, 6);
+      const amountInWei = parseUnits(depositAmount, 18);
 
       writeDeposit({
         address: contractAddress,
@@ -138,7 +138,7 @@ export default function LPPortal() {
 
     try {
       setError(null);
-      const amountInWei = parseUnits(withdrawAmount, 6);
+      const amountInWei = parseUnits(withdrawAmount, 18);
 
       writeWithdraw({
         address: contractAddress,
