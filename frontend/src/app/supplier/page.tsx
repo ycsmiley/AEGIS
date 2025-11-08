@@ -91,12 +91,13 @@ export default function SupplierPortal() {
       if (isSuccess && hash && processingInvoiceId) {
         try {
           // Update database status
+          // @ts-expect-error - Supabase type inference issue with update
           await supabase
             .from('invoices')
             .update({
               status: 'FINANCED',
               financing_tx_hash: hash,
-            } as any)
+            })
             .eq('id', processingInvoiceId);
 
           // Reload invoices

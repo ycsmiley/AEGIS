@@ -111,12 +111,13 @@ export default function BuyerPortal() {
     const updateRepaymentStatus = async () => {
       if (isSuccess && repayingInvoiceId && hash) {
         try {
+          // @ts-expect-error - Supabase type inference issue with update
           const { error: updateError } = await supabase
             .from('invoices')
             .update({
               status: 'PAID',
               repayment_tx_hash: hash,
-            } as any)
+            })
             .eq('id', repayingInvoiceId);
 
           if (updateError) {
