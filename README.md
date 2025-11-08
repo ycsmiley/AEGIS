@@ -23,7 +23,7 @@ Arc's USDC-native architecture eliminates the need for ETH gas tokens, creating 
 
 ### Key Features
 
-- **🤖 AI Dynamic Pricing** - Real-time risk assessment and optimal discount rate calculation
+- **🤖 AI Dynamic Pricing** - Mistral AI-powered real-time risk assessment and optimal discount rate calculation
 - **⚡ Instant Financing** - Suppliers receive funds within minutes of approval
 - **🔒 EIP-712 Signatures** - Secure off-chain authorization for on-chain execution
 - **🌐 Multi-Role Platform** - Dedicated interfaces for Buyers, Suppliers, and Liquidity Providers
@@ -50,8 +50,9 @@ Arc's USDC-native architecture eliminates the need for ETH gas tokens, creating 
 │                            │                              │
 │   ┌─────────────────┐  ┌──┴────────────────┐            │
 │   │  Aegis AI Agent │  │  Blockchain       │            │
-│   │  Risk Scoring   │  │  Service          │            │
-│   │  EIP-712 Signer │  │  Event Listener   │            │
+│   │  (Mistral AI)   │  │  Service          │            │
+│   │  Risk Scoring   │  │  Event Listener   │            │
+│   │  EIP-712 Signer │  │                   │            │
 │   └────────┬────────┘  └──┬────────────────┘            │
 │            │               │                              │
 │            └───────┬───────┘                              │
@@ -84,7 +85,7 @@ aegis-finance/
 │
 ├── backend/              # NestJS API Server
 │   ├── src/
-│   │   ├── aegis/       # AI pricing engine
+│   │   ├── aegis/       # AI pricing engine (Mistral AI)
 │   │   ├── blockchain/  # Contract interactions
 │   │   ├── invoice/     # Invoice management
 │   │   └── auth/        # Authentication
@@ -114,6 +115,7 @@ aegis-finance/
 - **MetaMask** or compatible Web3 wallet
 - **Supabase** account (free tier works)
 - **Arc Testnet USDC** from the [faucet](https://faucet.testnet.arc.network)
+- **Mistral AI API Key** (optional, free tier available at [console.mistral.ai](https://console.mistral.ai/))
 
 ### Installation
 
@@ -160,6 +162,7 @@ AEGIS_SERVER_WALLET=your_aegis_server_address
 ARC_CONTRACT_ADDRESS=0x8080900fD63d6C7e4E716D1cb65F1071e98cD14C
 ARC_RPC_URL=https://rpc.testnet.arc.network
 ARC_CHAIN_ID=5042002
+MISTRAL_API_KEY=your_mistral_api_key  # Optional - for AI-powered risk scoring
 ```
 
 **4. Database Setup**
@@ -235,7 +238,7 @@ Add the Arc Testnet network to your wallet:
 └────────────┬─────────────────────────────────────────┘
              │
 ┌────────────▼─────────────────────────────────────────┐
-│ 3. AI CALCULATES RISK & PRICING                      │
+│ 3. MISTRAL AI CALCULATES RISK & PRICING             │
 │    ├─> Analyzes: credit scores, term, liquidity     │
 │    ├─> Calculates: discount rate (1-5%)             │
 │    └─> Generates: EIP-712 signature                 │
@@ -325,6 +328,7 @@ curl http://localhost:3001/api/blockchain/pool/status
 - **Language**: TypeScript
 - **Database**: Supabase (PostgreSQL)
 - **Blockchain**: Ethers.js v6
+- **AI Engine**: Mistral AI (via official API)
 - **Auth**: JWT + Supabase Auth
 
 ### Smart Contracts
