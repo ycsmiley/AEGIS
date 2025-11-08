@@ -374,7 +374,6 @@ export default function SupplierPortal() {
             label="Financed Amount"
             value={stats.totalFinanced > 0 ? `$${stats.totalFinanced.toLocaleString()}` : '$0'}
             icon={DollarSign}
-            trend={stats.totalFinanced > 0 ? { value: 15.3, isPositive: true } : undefined}
             description="Total funded"
             tooltip="Total amount you received from accepted financing offers. This is the sum of all payout amounts (invoice amount minus discount) across all financed invoices."
           />
@@ -388,7 +387,6 @@ export default function SupplierPortal() {
             label="Average APR"
             value={stats.averageRate > 0 ? `${stats.averageRate.toFixed(2)}%` : '0%'}
             icon={TrendingUp}
-            trend={stats.averageRate > 0 ? { value: 0.3, isPositive: false } : undefined}
             description="Across all invoices"
             tooltip="Annual Percentage Rate calculated from your invoice discount rates and payment terms. Formula: (Discount Rate × 365 ÷ Days Until Due) × 100. For example, a 2% discount on a 60-day invoice equals 12.17% APR."
           />
