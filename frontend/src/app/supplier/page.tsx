@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
-import { parseUnits, id as hashString } from 'viem';
+import { parseUnits, keccak256, toHex } from 'viem';
 import { createClient } from '@/lib/supabase/client';
 import { Database } from '@/lib/supabase/types';
 import { Button } from '@/components/ui/button';
@@ -141,7 +141,7 @@ export default function SupplierPortal() {
         abi: ArcPoolABI,
         functionName: 'withdrawFinancing',
         args: [
-          hashString(invoice.invoice_number),
+          keccak256(toHex(invoice.invoice_number)),
           parseUnits(invoice.aegis_payout_offer.toString(), 18),
           parseUnits(invoice.aegis_repayment_amount.toString(), 18),
           BigInt(invoice.aegis_due_date || 0),

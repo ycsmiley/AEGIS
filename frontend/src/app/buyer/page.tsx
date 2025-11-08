@@ -63,6 +63,7 @@ export default function BuyerPortal() {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [expandedInvoiceId, setExpandedInvoiceId] = useState<string | null>(null);
 
   const supabase = createClient();
   const contractAddress = process.env.NEXT_PUBLIC_ARC_CONTRACT_ADDRESS as `0x${string}` || '0x';
@@ -325,60 +326,93 @@ export default function BuyerPortal() {
               </Card>
             ) : (
               <div className="grid gap-4">
-                {pendingInvoices.map((invoice) => (
-                  <Card key={invoice.id} className="hover:border-neutral-600 transition-colors">
-                    <CardContent className="p-6">
-                      <div className="flex items-start justify-between mb-4">
-                        <div>
-                          <div className="flex items-center gap-3 mb-2">
-                            <h3 className="text-lg font-semibold text-white">{invoice.id}</h3>
-                            <Badge variant="warning">
-                              <Clock className="h-3 w-3 mr-1" />
-                              Pending Approval
-                            </Badge>
+                {pendingInvoices.map((invoice) => {
+                  const isExpanded = expandedInvoiceId === invoice.id;
+                  return (
+                    <Card key={invoice.id} className="hover:border-neutral-600 transition-colors">
+                      <CardContent className="p-6">
+                        <div className="flex items-start justify-between mb-4">
+                          <div>
+                            <div className="flex items-center gap-3 mb-2">
+                              <h3 className="text-lg font-semibold text-white">{invoice.id.slice(0, 8)}...</h3>
+                              <Badge variant="warning">
+                                <Clock className="h-3 w-3 mr-1" />
+                                Pending Approval
+                              </Badge>
+                            </div>
+                            <div className="text-sm text-neutral-400">
+                              Supplier: {invoice.supplier_address ? <Address address={invoice.supplier_address} /> : "N/A"}
+                            </div>
                           </div>
-                          <div className="text-sm text-neutral-400">
-                            Supplier: {invoice.supplier_address ? <Address address={invoice.supplier_address} /> : "N/A"}
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-2xl font-bold text-white">
-                            ${invoice.amount.toLocaleString()}
-                          </p>
-                          {invoice.due_date && (
-                            <p className="text-xs text-neutral-500 mt-1">
-                              Due: {new Date(invoice.due_date).toLocaleDateString()}
+                          <div className="text-right">
+                            <p className="text-2xl font-bold text-white">
+                              ${invoice.amount.toLocaleString()}
                             </p>
-                          )}
+                            {invoice.due_date && (
+                              <p className="text-xs text-neutral-500 mt-1">
+                                Due: {new Date(invoice.due_date).toLocaleDateString()}
+                              </p>
+                            )}
+                          </div>
                         </div>
-                      </div>
 
-                      <div className="flex items-center justify-between pt-4 border-t border-neutral-800">
-                        <div className="flex gap-3">
+                        {/* Expanded Details */}
+                        {isExpanded && (
+                          <div className="mb-4 pt-4 border-t border-neutral-800 space-y-3">
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <p className="text-xs text-neutral-500 mb-1">Full ID</p>
+                                <p className="text-sm text-white font-mono break-all">{invoice.id}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-neutral-500 mb-1">Supplier Address</p>
+                                <p className="text-sm text-white font-mono break-all">{invoice.supplier_address}</p>
+                              </div>
+                            </div>
+                            {invoice.aegis_pricing_explanation && (
+                              <div className="p-3 bg-neutral-900/50 border border-neutral-800 rounded">
+                                <p className="text-xs font-semibold text-neutral-300 mb-2">AI Pricing Analysis</p>
+                                <pre className="text-xs text-neutral-400 whitespace-pre-wrap font-mono">
+                                  {invoice.aegis_pricing_explanation}
+                                </pre>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        <div className="flex items-center justify-between pt-4 border-t border-neutral-800">
+                          <div className="flex gap-3">
+                            <Button
+                              variant="default"
+                              size="sm"
+                              className="gap-2"
+                              onClick={() => handleApproveInvoice(invoice.id)}
+                            >
+                              <ThumbsUp className="h-4 w-4" />
+                              Approve
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              className="gap-2"
+                              onClick={() => handleRejectInvoice(invoice.id)}
+                            >
+                              <ThumbsDown className="h-4 w-4" />
+                              Reject
+                            </Button>
+                          </div>
                           <Button
-                            variant="default"
+                            variant="ghost"
                             size="sm"
-                            className="gap-2"
-                            onClick={() => handleApproveInvoice(invoice.id)}
+                            onClick={() => setExpandedInvoiceId(isExpanded ? null : invoice.id)}
                           >
-                            <ThumbsUp className="h-4 w-4" />
-                            Approve
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            className="gap-2"
-                            onClick={() => handleRejectInvoice(invoice.id)}
-                          >
-                            <ThumbsDown className="h-4 w-4" />
-                            Reject
+                            {isExpanded ? 'Hide Details' : 'View Details'}
                           </Button>
                         </div>
-                        <Button variant="ghost" size="sm">View Details</Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             )}
           </TabsContent>
@@ -395,43 +429,76 @@ export default function BuyerPortal() {
               </Card>
             ) : (
               <div className="grid gap-4">
-                {approvedInvoices.map((invoice) => (
-                  <Card key={invoice.id}>
-                    <CardContent className="p-6">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h3 className="text-lg font-semibold text-white">{invoice.id}</h3>
-                            <Badge variant="success">
-                              <CheckCircle className="h-3 w-3 mr-1" />
-                              Approved
-                            </Badge>
-                          </div>
-                          <div className="text-sm text-neutral-400 mb-3">
-                            Supplier: {invoice.supplier_address ? <Address address={invoice.supplier_address} /> : "N/A"}
-                          </div>
-                          <div className="flex gap-6 text-sm">
-                            <div>
-                              <span className="text-neutral-500">Amount: </span>
-                              <span className="text-white font-medium">
-                                ${invoice.amount.toLocaleString()}
-                              </span>
+                {approvedInvoices.map((invoice) => {
+                  const isExpanded = expandedInvoiceId === invoice.id;
+                  return (
+                    <Card key={invoice.id}>
+                      <CardContent className="p-6">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <h3 className="text-lg font-semibold text-white">{invoice.id.slice(0, 8)}...</h3>
+                              <Badge variant="success">
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                Approved
+                              </Badge>
                             </div>
-                            {invoice.due_date && (
+                            <div className="text-sm text-neutral-400 mb-3">
+                              Supplier: {invoice.supplier_address ? <Address address={invoice.supplier_address} /> : "N/A"}
+                            </div>
+                            <div className="flex gap-6 text-sm">
                               <div>
-                                <span className="text-neutral-500">Due: </span>
+                                <span className="text-neutral-500">Amount: </span>
                                 <span className="text-white font-medium">
-                                  {new Date(invoice.due_date).toLocaleDateString()}
+                                  ${invoice.amount.toLocaleString()}
                                 </span>
+                              </div>
+                              {invoice.due_date && (
+                                <div>
+                                  <span className="text-neutral-500">Due: </span>
+                                  <span className="text-white font-medium">
+                                    {new Date(invoice.due_date).toLocaleDateString()}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setExpandedInvoiceId(isExpanded ? null : invoice.id)}
+                          >
+                            {isExpanded ? 'Hide Details' : 'View Details'}
+                          </Button>
+                        </div>
+
+                        {/* Expanded Details */}
+                        {isExpanded && (
+                          <div className="mt-4 pt-4 border-t border-neutral-800 space-y-3">
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <p className="text-xs text-neutral-500 mb-1">Full ID</p>
+                                <p className="text-sm text-white font-mono break-all">{invoice.id}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-neutral-500 mb-1">Supplier Address</p>
+                                <p className="text-sm text-white font-mono break-all">{invoice.supplier_address}</p>
+                              </div>
+                            </div>
+                            {invoice.aegis_pricing_explanation && (
+                              <div className="p-3 bg-neutral-900/50 border border-neutral-800 rounded">
+                                <p className="text-xs font-semibold text-neutral-300 mb-2">AI Pricing Analysis</p>
+                                <pre className="text-xs text-neutral-400 whitespace-pre-wrap font-mono">
+                                  {invoice.aegis_pricing_explanation}
+                                </pre>
                               </div>
                             )}
                           </div>
-                        </div>
-                        <Button variant="ghost" size="sm">View Details</Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             )}
           </TabsContent>
@@ -495,7 +562,13 @@ export default function BuyerPortal() {
                             </>
                           )}
                         </Button>
-                        <Button variant="ghost" size="sm">View Details</Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setExpandedInvoiceId(expandedInvoiceId === invoice.id ? null : invoice.id)}
+                        >
+                          {expandedInvoiceId === invoice.id ? 'Hide Details' : 'View Details'}
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>
@@ -548,7 +621,13 @@ export default function BuyerPortal() {
                             )}
                           </div>
                         </div>
-                        <Button variant="ghost" size="sm">View Details</Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setExpandedInvoiceId(expandedInvoiceId === invoice.id ? null : invoice.id)}
+                        >
+                          {expandedInvoiceId === invoice.id ? 'Hide Details' : 'View Details'}
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>

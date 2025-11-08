@@ -186,8 +186,18 @@ export function CreateInvoiceDialog({ onInvoiceCreated }: CreateInvoiceDialogPro
                 value={formData.due_date}
                 onChange={(e) => updateField('due_date', e.target.value)}
                 required
-                className="col-span-3"
+                className="col-span-3 cursor-pointer"
                 min={new Date().toISOString().split('T')[0]}
+                onClick={(e) => {
+                  // Force open date picker on click
+                  const input = e.currentTarget as HTMLInputElement;
+                  try {
+                    input.showPicker?.();
+                  } catch (err) {
+                    // Fallback: showPicker not supported in some browsers
+                    input.focus();
+                  }
+                }}
               />
             </div>
 

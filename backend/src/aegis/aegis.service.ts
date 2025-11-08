@@ -182,39 +182,28 @@ export class AegisService {
 
 Respond with only a single number between 0-100 representing the creditworthiness score.`;
 
-      // Try multiple models in order of preference (fallback if one fails)
-      const models = [
-        'meta-llama/Llama-3.2-1B-Instruct', // Small, fast, free
-        'mistralai/Mistral-7B-Instruct-v0.3', // Newer Mistral version
-        'HuggingFaceH4/zephyr-7b-beta', // Alternative open model
-      ];
+      // Use single Mistral model
+      const modelName = 'mistralai/Mistral-7B-Instruct-v0.2';
 
       let result;
-      let lastError;
+      try {
+        this.logger.debug(`Using Mistral model: ${modelName}`);
 
-      for (const model of models) {
-        try {
-          this.logger.debug(`Trying model: ${model}`);
-          result = await this.hf.textGeneration({
-            model,
-            inputs: prompt,
-            parameters: {
-              max_new_tokens: 10,
-              temperature: 0.3,
-              return_full_text: false,
-            },
-          });
-          this.logger.log(`Successfully used model: ${model}`);
-          break; // Success, exit loop
-        } catch (err) {
-          this.logger.debug(`Model ${model} failed: ${err.message}`);
-          lastError = err;
-          continue; // Try next model
-        }
-      }
+        result = await this.hf.textGeneration({
+          model: modelName,
+          inputs: prompt,
+          parameters: {
+            max_new_tokens: 10,
+            temperature: 0.3,
+            return_full_text: false,
+          },
+        });
 
-      if (!result) {
-        throw lastError || new Error('All models failed');
+        this.logger.log(`Successfully used Mistral model: ${modelName}`);
+      } catch (err) {
+        this.logger.error(`Mistral model failed: ${err.message}`);
+        this.logger.warn('Falling back to rule-based scoring');
+        return null; // Gracefully fallback to rule-based scoring
       }
 
       const scoreText = result.generated_text.trim();
