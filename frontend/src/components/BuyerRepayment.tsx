@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
-import { parseUnits, formatUnits, id as hashString } from 'viem';
+import { parseUnits, formatUnits, keccak256, stringToHex } from 'viem';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -19,7 +19,7 @@ export function BuyerRepayment({ invoiceId, contractAddress }: RepaymentProps) {
   const [totalDue, setTotalDue] = useState(0);
   const [repaymentAmount, setRepaymentAmount] = useState(0);
 
-  const invoiceHash = hashString(invoiceId) as `0x${string}`;
+  const invoiceHash = keccak256(stringToHex(invoiceId));
 
   // Read financing record from contract
   const { data: record, isLoading: isLoadingRecord } = useReadContract({
