@@ -167,18 +167,58 @@ export default function SupplierPortal() {
         throw new Error(`Invalid invoice pricing data: payout=${invoice.aegis_payout_offer}, repayment=${invoice.aegis_repayment_amount}`);
       }
 
-      // 2. Call smart contract (database update happens in useEffect after transaction confirms)
+      // 2. Prepare contract call parameters
+      const invoiceHash = keccak256(stringToHex(invoice.invoice_number));
+      const payoutAmountWei = parseUnits(invoice.aegis_payout_offer.toString(), 18);
+      const repaymentAmountWei = parseUnits(invoice.aegis_repayment_amount.toString(), 18);
+      const dueDate = BigInt(invoice.aegis_due_date || 0);
+      const nonce = BigInt(invoice.aegis_nonce || 0);
+      const deadline = BigInt(invoice.aegis_deadline || 0);
+
+      // Debug logging
+      console.group('🔍 Transaction Parameters');
+      console.log('Invoice Number:', invoice.invoice_number);
+      console.log('Invoice Hash:', invoiceHash);
+      console.log('Payout Amount:', invoice.aegis_payout_offer, 'USDC');
+      console.log('Payout Amount (wei):', payoutAmountWei.toString());
+      console.log('Repayment Amount:', invoice.aegis_repayment_amount, 'USDC');
+      console.log('Repayment Amount (wei):', repaymentAmountWei.toString());
+      console.log('Due Date (timestamp):', dueDate.toString());
+      console.log('Due Date (human):', new Date(Number(dueDate) * 1000).toLocaleString());
+      console.log('Nonce:', nonce.toString());
+      console.log('Deadline (timestamp):', deadline.toString());
+      console.log('Deadline (human):', new Date(Number(deadline) * 1000).toLocaleString());
+      console.log('Signature:', invoice.aegis_signature);
+
+      // Check if deadline has expired
+      const nowTimestamp = Math.floor(Date.now() / 1000);
+      const isExpired = Number(deadline) < nowTimestamp;
+      console.log('Current Time:', nowTimestamp);
+      console.log('Is Expired?', isExpired ? '❌ YES - EXPIRED!' : '✓ No');
+
+      // Validation checks
+      console.log('\nValidation Checks:');
+      console.log('✓ Repayment > Payout?', repaymentAmountWei > payoutAmountWei ? '✓ Yes' : '❌ No');
+      console.log('✓ Due Date in future?', Number(dueDate) > nowTimestamp ? '✓ Yes' : '❌ No');
+      console.log('✓ Deadline not expired?', !isExpired ? '✓ Yes' : '❌ No');
+      console.groupEnd();
+
+      if (isExpired) {
+        throw new Error('Signature has expired! Please refresh the page and try again.');
+      }
+
+      // 3. Call smart contract (database update happens in useEffect after transaction confirms)
       await writeContract({
         address: contractAddress,
         abi: ArcPoolABI,
         functionName: 'withdrawFinancing',
         args: [
-          keccak256(stringToHex(invoice.invoice_number)),
-          parseUnits(invoice.aegis_payout_offer.toString(), 18),
-          parseUnits(invoice.aegis_repayment_amount.toString(), 18),
-          BigInt(invoice.aegis_due_date || 0),
-          BigInt(invoice.aegis_nonce || 0),
-          BigInt(invoice.aegis_deadline || 0),
+          invoiceHash,
+          payoutAmountWei,
+          repaymentAmountWei,
+          dueDate,
+          nonce,
+          deadline,
           invoice.aegis_signature as `0x${string}`,
         ],
       });
