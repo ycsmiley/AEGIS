@@ -18,7 +18,8 @@ services:
     branch: main # Change to your deployment branch if different
 
     # Build Configuration
-    buildCommand: npm install && npm run build
+    # Note: Install with dev dependencies for build tools (TypeScript, NestJS CLI)
+    buildCommand: npm install --include=dev && npm run build
     startCommand: npm run start:prod
 
     # Health Check

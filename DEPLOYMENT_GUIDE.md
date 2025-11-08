@@ -165,9 +165,11 @@ vercel --cwd frontend
    Branch: main (or your deployment branch)
    Root Directory: backend
    Runtime: Node
-   Build Command: npm install && npm run build
+   Build Command: npm install --include=dev && npm run build
    Start Command: npm run start:prod
    ```
+
+   **Important**: Use `npm install --include=dev` to install devDependencies (TypeScript, NestJS CLI) needed for building.
 
 4. **Select Plan**
    - Choose "Free" plan
@@ -438,11 +440,22 @@ jobs:
 
 ### Backend Issues
 
+**Build Fails - "nest: not found"**
+```bash
+# Cause: devDependencies not installed during build
+# Solution:
+# 1. Go to Render Dashboard → Your Service → Settings
+# 2. Update Build Command to:
+#    npm install --include=dev && npm run build
+# 3. Save and trigger manual deploy
+```
+
 **Backend Won't Start**
 ```bash
 # 1. Check Render logs for errors
 # 2. Verify all required env vars are set
 # 3. Check if build command succeeded
+# 4. Verify Node.js version (should be 18+)
 ```
 
 **Mistral AI Errors**
