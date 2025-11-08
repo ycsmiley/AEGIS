@@ -93,6 +93,8 @@ export default function BuyerPortal() {
   }, [isSuccess]);
 
   const loadInvoices = async () => {
+    if (!address) return;
+
     try {
       setIsLoading(true);
       setError(null);
@@ -100,7 +102,8 @@ export default function BuyerPortal() {
       const { data, error: fetchError } = await supabase
         .from('invoices')
         .select('*')
-        .order('created_at', { ascending: false });
+        .eq('buyer_address', address.toLowerCase())
+        .order('created_at', { ascending: false});
 
       if (fetchError) throw fetchError;
 
