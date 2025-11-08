@@ -141,12 +141,12 @@ export class AegisService {
     const repaymentAmount = invoiceAmount;
 
     this.logger.log(
-      `Pricing calculated: Payout ${payoutAmount}, Repayment ${repaymentAmount}, Discount ${(discountRate * 100).toFixed(2)}%, Risk Score ${riskScore}${aiRiskScore !== null ? `, AI Risk Score ${aiRiskScore}` : ''}`,
+      `Pricing calculated: Payout ${payoutAmount.toFixed(2)}, Repayment ${repaymentAmount.toFixed(2)}, Discount ${(discountRate * 100).toFixed(2)}%, Risk Score ${riskScore}${aiRiskScore !== null ? `, AI Risk Score ${aiRiskScore}` : ''}`,
     );
 
     return {
-      payoutAmount: Math.floor(payoutAmount),
-      repaymentAmount: Math.floor(repaymentAmount),
+      payoutAmount: Number(payoutAmount.toFixed(2)), // Keep decimals for accurate amounts
+      repaymentAmount: Number(repaymentAmount.toFixed(2)),
       discountRate: Number(discountRate.toFixed(4)),
       riskScore: Number(riskScore.toFixed(2)),
       aiRiskScore: aiRiskScore !== null ? Number(aiRiskScore.toFixed(2)) : undefined,

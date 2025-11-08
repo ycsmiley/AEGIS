@@ -132,7 +132,7 @@ export default function SupplierPortal() {
       }
 
       if (!invoice.aegis_payout_offer || !invoice.aegis_repayment_amount) {
-        throw new Error('Invalid invoice pricing data');
+        throw new Error(`Invalid invoice pricing data: payout=${invoice.aegis_payout_offer}, repayment=${invoice.aegis_repayment_amount}`);
       }
 
       // 2. Call smart contract
@@ -321,7 +321,7 @@ export default function SupplierPortal() {
                         <div>
                           <p className="text-sm text-neutral-400 mb-1">You Receive</p>
                           <p className="text-xl font-bold text-green-400">
-                            ${invoice.aegis_payout_offer?.toLocaleString()} USDC
+                            ${invoice.aegis_payout_offer?.toFixed(2) || '0.00'} USDC
                           </p>
                         </div>
                       </div>
@@ -465,7 +465,7 @@ export default function SupplierPortal() {
                               <div className="text-right mr-4">
                                 <p className="text-xs text-neutral-500 mb-1">Offer</p>
                                 <p className="text-lg font-bold text-green-400">
-                                  ${invoice.aegis_payout_offer.toLocaleString()}
+                                  ${invoice.aegis_payout_offer.toFixed(2)}
                                 </p>
                               </div>
                             )}
