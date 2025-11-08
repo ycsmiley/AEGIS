@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
-import { parseUnits, id as hashString } from 'viem';
+import { parseUnits, keccak256, stringToHex } from 'viem';
 import { createClient } from '@/lib/supabase/client';
 import { Database } from '@/lib/supabase/types';
 import { Button } from '@/components/ui/button';
@@ -222,7 +222,7 @@ export default function BuyerPortal() {
       }
 
       // Create invoice hash for contract call
-      const invoiceHash = hashString(invoice.id) as `0x${string}`;
+      const invoiceHash = keccak256(stringToHex(invoice.id));
 
       // Store the invoice ID for the success handler
       setRepayingInvoiceId(invoice.id);
@@ -632,6 +632,42 @@ export default function BuyerPortal() {
                           </div>
                         )}
 
+                        {/* Expanded Details */}
+                        {expandedInvoiceId === invoice.id && (
+                          <div className="mb-4 pt-4 border-t border-neutral-800 space-y-3">
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <p className="text-xs text-neutral-500 mb-1">Full ID</p>
+                                <p className="text-sm text-white font-mono break-all">{invoice.id}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-neutral-500 mb-1">Supplier Address</p>
+                                <p className="text-sm text-white font-mono break-all">{invoice.supplier_address}</p>
+                              </div>
+                              {invoice.financing_tx_hash && (
+                                <div>
+                                  <p className="text-xs text-neutral-500 mb-1">Financing Tx Hash</p>
+                                  <p className="text-sm text-white font-mono break-all">{invoice.financing_tx_hash}</p>
+                                </div>
+                              )}
+                              {invoice.aegis_payout_offer && (
+                                <div>
+                                  <p className="text-xs text-neutral-500 mb-1">Payout Received</p>
+                                  <p className="text-sm text-white">${invoice.aegis_payout_offer.toLocaleString()}</p>
+                                </div>
+                              )}
+                            </div>
+                            {invoice.aegis_pricing_explanation && (
+                              <div className="p-3 bg-neutral-900/50 border border-neutral-800 rounded">
+                                <p className="text-xs font-semibold text-neutral-300 mb-2">AI Pricing Analysis</p>
+                                <pre className="text-xs text-neutral-400 whitespace-pre-wrap font-mono">
+                                  {invoice.aegis_pricing_explanation}
+                                </pre>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
                         <div className="flex items-center justify-between pt-4 border-t border-neutral-800">
                           <Button
                             onClick={() => handleRepayInvoice(invoice)}
@@ -719,6 +755,54 @@ export default function BuyerPortal() {
                           {expandedInvoiceId === invoice.id ? 'Hide Details' : 'View Details'}
                         </Button>
                       </div>
+
+                      {/* Expanded Details */}
+                      {expandedInvoiceId === invoice.id && (
+                        <div className="mt-4 pt-4 border-t border-neutral-800 space-y-3">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <p className="text-xs text-neutral-500 mb-1">Full ID</p>
+                              <p className="text-sm text-white font-mono break-all">{invoice.id}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-neutral-500 mb-1">Supplier Address</p>
+                              <p className="text-sm text-white font-mono break-all">{invoice.supplier_address}</p>
+                            </div>
+                            {invoice.financing_tx_hash && (
+                              <div>
+                                <p className="text-xs text-neutral-500 mb-1">Financing Tx Hash</p>
+                                <p className="text-sm text-white font-mono break-all">{invoice.financing_tx_hash}</p>
+                              </div>
+                            )}
+                            {invoice.repayment_tx_hash && (
+                              <div>
+                                <p className="text-xs text-neutral-500 mb-1">Repayment Tx Hash</p>
+                                <p className="text-sm text-white font-mono break-all">{invoice.repayment_tx_hash}</p>
+                              </div>
+                            )}
+                            {invoice.aegis_payout_offer && (
+                              <div>
+                                <p className="text-xs text-neutral-500 mb-1">Payout Received</p>
+                                <p className="text-sm text-white">${invoice.aegis_payout_offer.toLocaleString()}</p>
+                              </div>
+                            )}
+                            {invoice.due_date && (
+                              <div>
+                                <p className="text-xs text-neutral-500 mb-1">Original Due Date</p>
+                                <p className="text-sm text-white">{new Date(invoice.due_date).toLocaleDateString()}</p>
+                              </div>
+                            )}
+                          </div>
+                          {invoice.aegis_pricing_explanation && (
+                            <div className="p-3 bg-neutral-900/50 border border-neutral-800 rounded">
+                              <p className="text-xs font-semibold text-neutral-300 mb-2">AI Pricing Analysis</p>
+                              <pre className="text-xs text-neutral-400 whitespace-pre-wrap font-mono">
+                                {invoice.aegis_pricing_explanation}
+                              </pre>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 ))}
