@@ -19,7 +19,7 @@ services:
 
     # Build Configuration
     # Note: Install with dev dependencies for build tools (TypeScript, NestJS CLI)
-    buildCommand: npm install --include=dev && npm run build
+    buildCommand: npm ci --include=dev && npx -y @nestjs/cli build
     startCommand: npm run start:prod
 
     # Health Check
