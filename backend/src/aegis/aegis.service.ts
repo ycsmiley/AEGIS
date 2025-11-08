@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ethers } from 'ethers';
-import { HfInference } from '@huggingface/inference';
+import { Mistral } from '@mistralai/mistralai';
 import { BlockchainService } from '../blockchain/blockchain.service';
 
 interface PricingRules {
@@ -38,19 +38,19 @@ export class AegisService {
     riskMultiplier: 1.2,
     liquidityThreshold: 1000000, // 1M USDC
   };
-  private hf: HfInference | null = null;
+  private mistral: Mistral | null = null;
 
   constructor(
     private readonly configService: ConfigService,
     private readonly blockchainService: BlockchainService,
   ) {
-    // Initialize Hugging Face client if token is provided
-    const hfToken = this.configService.get<string>('HUGGINGFACE_API_TOKEN');
-    if (hfToken) {
-      this.hf = new HfInference(hfToken);
-      this.logger.log('Hugging Face AI integration enabled for Mistral models');
+    // Initialize Mistral AI client if API key is provided
+    const mistralApiKey = this.configService.get<string>('MISTRAL_API_KEY');
+    if (mistralApiKey) {
+      this.mistral = new Mistral({ apiKey: mistralApiKey });
+      this.logger.log('Mistral AI integration enabled');
     } else {
-      this.logger.warn('Hugging Face token not found - using rule-based risk scoring only');
+      this.logger.warn('Mistral API key not found - using rule-based risk scoring only');
     }
   }
 
@@ -156,7 +156,7 @@ export class AegisService {
   }
 
   /**
-   * Calculate AI-powered risk score using Mistral via Hugging Face
+   * Calculate AI-powered risk score using Mistral AI official API
    * Returns a score from 0-100 (higher is better/lower risk)
    */
   private async calculateAIRiskScore(
@@ -166,13 +166,13 @@ export class AegisService {
     supplierRating: number,
     liquidityRatio: number,
   ): Promise<number | null> {
-    if (!this.hf) {
-      this.logger.warn('Hugging Face client not initialized - check HUGGINGFACE_API_TOKEN');
+    if (!this.mistral) {
+      this.logger.warn('Mistral AI client not initialized - check MISTRAL_API_KEY');
       return null;
     }
 
     try {
-      this.logger.debug('Requesting AI risk prediction from Mistral via Hugging Face...');
+      this.logger.debug('Requesting AI risk prediction from Mistral AI...');
 
       // Create a detailed prompt for Mistral to analyze credit risk
       const prompt = `You are a financial risk analyst specializing in invoice financing and credit risk assessment.
@@ -195,21 +195,24 @@ Consider these factors in your analysis:
 
 Respond with ONLY a single number between 0 and 100 representing the credit risk score. Do not include any explanation, just the number.`;
 
-      // Try using Mistral Small via Hugging Face
-      const result = await this.hf.textGeneration({
-        model: 'mistralai/Mistral-Small-24B-Instruct-2501',
-        inputs: prompt,
-        parameters: {
-          max_new_tokens: 10,
-          temperature: 0.3,
-          return_full_text: false,
-        },
+      // Use Mistral Small via official API
+      const chatResponse = await this.mistral.chat.complete({
+        model: 'mistral-small-latest',
+        messages: [
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        temperature: 0.3,
+        maxTokens: 10,
       });
 
-      const responseContent = result.generated_text?.trim();
+      const content = chatResponse.choices?.[0]?.message?.content;
+      const responseContent = typeof content === 'string' ? content.trim() : null;
 
       if (!responseContent) {
-        this.logger.warn('No response from Mistral');
+        this.logger.warn('No response from Mistral AI');
         return null;
       }
 
