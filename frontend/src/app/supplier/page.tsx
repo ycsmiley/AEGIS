@@ -92,14 +92,13 @@ export default function SupplierPortal() {
       if (isSuccess && hash && processingInvoiceId) {
         try {
           // Update database status
-          const updateData: Database['public']['Tables']['invoices']['Update'] = {
-            status: 'FINANCED',
-            financing_tx_hash: hash,
-          };
-          await supabase
+          await (supabase
             .from('invoices')
-            .update(updateData)
-            .eq('id', processingInvoiceId);
+            .update({
+              status: 'FINANCED',
+              financing_tx_hash: hash,
+            } as any)
+            .eq('id', processingInvoiceId));
 
           // Reload invoices
           await loadInvoices();

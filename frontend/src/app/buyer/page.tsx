@@ -112,14 +112,13 @@ export default function BuyerPortal() {
     const updateRepaymentStatus = async () => {
       if (isSuccess && repayingInvoiceId && hash) {
         try {
-          const updateData: Database['public']['Tables']['invoices']['Update'] = {
-            status: 'PAID',
-            repayment_tx_hash: hash,
-          };
-          const { error: updateError } = await supabase
+          const { error: updateError } = await (supabase
             .from('invoices')
-            .update(updateData)
-            .eq('id', repayingInvoiceId);
+            .update({
+              status: 'PAID',
+              repayment_tx_hash: hash,
+            } as any)
+            .eq('id', repayingInvoiceId));
 
           if (updateError) {
             console.error('Failed to update invoice status:', updateError);
@@ -191,13 +190,10 @@ export default function BuyerPortal() {
       setError(null);
       setSuccessMessage(null);
 
-      const updateData: Database['public']['Tables']['invoices']['Update'] = {
-        status: 'REJECTED',
-      };
-      const { error: updateError } = await supabase
+      const { error: updateError } = await (supabase
         .from('invoices')
-        .update(updateData)
-        .eq('id', invoiceId);
+        .update({ status: 'REJECTED' } as any)
+        .eq('id', invoiceId));
 
       if (updateError) throw updateError;
 
