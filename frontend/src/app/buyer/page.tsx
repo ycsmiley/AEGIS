@@ -263,7 +263,10 @@ export default function BuyerPortal() {
       }
 
       // Create invoice hash for contract call
-      const invoiceHash = keccak256(stringToHex(invoice.id));
+      // IMPORTANT: Must use invoice_number (not id) to match what supplier used in withdrawFinancing
+      const invoiceHashInput = invoice.invoice_number || invoice.id;
+      const invoiceHash = keccak256(stringToHex(invoiceHashInput));
+      console.log('Invoice Number:', invoiceHashInput);
       console.log('Invoice Hash:', invoiceHash);
 
       // Store the invoice ID for the success handler

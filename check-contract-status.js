@@ -1,6 +1,12 @@
 // Check if invoice is actually financed on contract
 const { ethers } = require('ethers');
-const ArcPoolABI = require('./contracts/deployments/arcTestnet-latest.json');
+const fs = require('fs');
+const path = require('path');
+
+// Load ABI from deployment file
+const deploymentPath = path.join(__dirname, 'contracts/deployments/arcTestnet-latest.json');
+const deployment = JSON.parse(fs.readFileSync(deploymentPath, 'utf8'));
+const ArcPoolABI = deployment.abi;
 
 async function checkInvoiceStatus(invoiceId) {
   const provider = new ethers.JsonRpcProvider('https://rpc.testnet.arc.network');
