@@ -114,7 +114,7 @@ export default function BuyerPortal() {
           const { error: updateError } = await supabase
             .from('invoices')
             .update({
-              status: 'PAID',
+              status: 'PAID' as const,
               repayment_tx_hash: hash,
             })
             .eq('id', repayingInvoiceId);
