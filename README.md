@@ -1,289 +1,410 @@
-# Aegis Finance - Arc Supply Chain Finance Platform
+# Aegis Finance
 
-<div align="center">
-  <h3>🚀 Arc-Native Supply Chain Finance Solution</h3>
-  <p>Off-Chain AI Agent + On-Chain Settlement</p>
-</div>
+> AI-Powered Supply Chain Finance Platform on Arc Blockchain
 
-## 📋 Project Overview
+[![Arc Testnet](https://img.shields.io/badge/Arc-Testnet-blue)](https://testnet.arc.network)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Solidity](https://img.shields.io/badge/Solidity-0.8.19-363636?logo=solidity)](https://soliditylang.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-14-black?logo=next.js)](https://nextjs.org/)
+[![NestJS](https://img.shields.io/badge/NestJS-10-E0234E?logo=nestjs)](https://nestjs.com/)
 
-Aegis Finance is a supply chain finance platform built on **Arc Blockchain**, leveraging Arc's USDC-native features to provide seamless invoice financing experience.
+## Overview
 
-### Core Features
+Aegis Finance is a next-generation supply chain finance platform that leverages Arc's USDC-native blockchain to provide seamless invoice financing. By combining off-chain AI-powered risk assessment with on-chain settlement, we offer suppliers instant access to liquidity without the complexity of traditional DeFi.
 
-- ✅ **Arc Native USDC** - No ETH needed for gas, USDC all the way
-- 🤖 **AI Dynamic Pricing** - Aegis Agent calculates optimal financing rates in real-time
-- ⚡ **Instant Settlement** - Off-chain analysis, on-chain execution
-- 🔒 **EIP-712 Signatures** - Secure off-chain authorization mechanism
-- 🌐 **Multi-Role Portals** - Buyer, Supplier, and Liquidity Provider interfaces
+### Why Arc Blockchain?
 
-## 🏗️ Technical Architecture
+Arc's USDC-native architecture eliminates the need for ETH gas tokens, creating a truly streamlined user experience:
+
+- **Single Currency Flow** - Users only need USDC for both transactions and gas fees
+- **No Token Approvals** - Direct USDC transfers without ERC20 approve/transfer patterns
+- **Transparent Costs** - All fees displayed in USDC, no surprise ETH requirements
+- **Lower Barrier to Entry** - New users can participate without acquiring multiple tokens
+
+### Key Features
+
+- **🤖 AI Dynamic Pricing** - Real-time risk assessment and optimal discount rate calculation
+- **⚡ Instant Financing** - Suppliers receive funds within minutes of approval
+- **🔒 EIP-712 Signatures** - Secure off-chain authorization for on-chain execution
+- **🌐 Multi-Role Platform** - Dedicated interfaces for Buyers, Suppliers, and Liquidity Providers
+- **📊 Real-Time Analytics** - Live pool status, utilization metrics, and interest tracking
+
+## Architecture
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                  Frontend (Next.js)                  │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐          │
-│  │  Buyer   │  │ Supplier │  │    LP    │          │
-│  │  Portal  │  │  Portal  │  │  Portal  │          │
-│  └──────────┘  └──────────┘  └──────────┘          │
-│         │              │              │              │
-│         └──────────────┴──────────────┘              │
-│                        │                              │
-│                   Wagmi + RainbowKit                 │
-└────────────────────────┬────────────────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│                  Frontend (Next.js 14)                   │
+│                                                           │
+│   ┌───────────┐  ┌───────────┐  ┌───────────┐          │
+│   │   Buyer   │  │ Supplier  │  │    LP     │          │
+│   │  Portal   │  │  Portal   │  │  Portal   │          │
+│   └─────┬─────┘  └─────┬─────┘  └─────┬─────┘          │
+│         │              │              │                  │
+│         └──────────────┴──────────────┘                  │
+│                        │                                  │
+│              Wagmi + RainbowKit                          │
+└────────────────────────┼─────────────────────────────────┘
                          │
-┌────────────────────────┴────────────────────────────┐
-│              Backend (Nest.js)                       │
-│  ┌──────────────┐  ┌──────────────┐                │
-│  │ Aegis Agent  │  │  Blockchain  │                │
-│  │ AI Pricing   │  │   Service    │                │
-│  └──────────────┘  └──────────────┘                │
-│         │                   │                        │
-│         └───────────────────┘                        │
-│                     │                                │
-│              Supabase Client                         │
-└────────────────────┬────────────────────────────────┘
+┌────────────────────────┼─────────────────────────────────┐
+│           Backend (NestJS) │                              │
+│                            │                              │
+│   ┌─────────────────┐  ┌──┴────────────────┐            │
+│   │  Aegis AI Agent │  │  Blockchain       │            │
+│   │  Risk Scoring   │  │  Service          │            │
+│   │  EIP-712 Signer │  │  Event Listener   │            │
+│   └────────┬────────┘  └──┬────────────────┘            │
+│            │               │                              │
+│            └───────┬───────┘                              │
+│                    │                                      │
+│           Supabase Client                                │
+└────────────────────┼──────────────────────────────────────┘
                      │
-        ┌────────────┴────────────┐
-        │                         │
-┌───────▼────────┐     ┌─────────▼──────────┐
-│   Supabase     │     │    Arc Testnet     │
-│   PostgreSQL   │     │   ArcPool.sol      │
-│   (Off-chain)  │     │   (On-chain)       │
-└────────────────┘     └────────────────────┘
+        ┌────────────┴───────────┐
+        │                        │
+┌───────▼────────┐    ┌──────────▼─────────┐
+│   Supabase     │    │   Arc Testnet      │
+│   PostgreSQL   │    │   Smart Contract   │
+│   (Off-chain)  │    │   (On-chain)       │
+└────────────────┘    └────────────────────┘
 ```
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 aegis-finance/
-├── frontend/           # Next.js Frontend Application
-│   ├── app/           # App Router
-│   │   ├── buyer/     # Buyer Portal
-│   │   ├── supplier/  # Supplier Portal
-│   │   └── lp/        # LP Portal
-│   ├── components/    # React Components
-│   └── lib/           # Utility Libraries
-│
-├── backend/           # Nest.js Backend Service
+├── frontend/              # Next.js 14 App Router
 │   ├── src/
-│   │   ├── auth/      # Authentication Module
-│   │   ├── invoice/   # Invoice Management
-│   │   ├── aegis/     # AI Agent
-│   │   └── blockchain/# Blockchain Interaction
+│   │   ├── app/          # Route pages
+│   │   │   ├── buyer/    # Buyer portal
+│   │   │   ├── supplier/ # Supplier portal
+│   │   │   └── lp/       # LP portal
+│   │   ├── components/   # React components
+│   │   └── lib/          # Utilities & configs
+│   └── package.json
 │
-├── contracts/         # Solidity Smart Contracts
+├── backend/              # NestJS API Server
+│   ├── src/
+│   │   ├── aegis/       # AI pricing engine
+│   │   ├── blockchain/  # Contract interactions
+│   │   ├── invoice/     # Invoice management
+│   │   └── auth/        # Authentication
+│   └── package.json
+│
+├── contracts/            # Solidity Smart Contracts
 │   ├── contracts/
-│   │   └── ArcPool.sol
-│   ├── scripts/       # Deployment Scripts
-│   └── test/          # Contract Tests
+│   │   └── ArcPool.sol  # Main pool contract
+│   ├── scripts/         # Deployment scripts
+│   ├── test/            # Contract tests
+│   └── deployments/     # Deployment records
 │
-└── database/          # Supabase Schemas
-    └── schema.sql
+├── database/            # Supabase Schemas
+│   └── schema.sql       # Complete DB schema
+│
+└── doc/                 # Additional Documentation
+    ├── QUICK_START.md
+    ├── DEPLOYMENT_GUIDE.md
+    └── API_AND_TESTING_GUIDE.md
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
-- Node.js 18+
-- npm (comes with Node.js)
-- Supabase Account
-- Arc Testnet USDC (from faucet)
+- **Node.js** 18+ and npm
+- **MetaMask** or compatible Web3 wallet
+- **Supabase** account (free tier works)
+- **Arc Testnet USDC** from the [faucet](https://faucet.testnet.arc.network)
 
-### 1. Install Dependencies
+### Installation
+
+**1. Clone and Install Dependencies**
 
 ```bash
-# Frontend
-cd frontend
-npm install
-
-# Backend
-cd ../backend
-npm install
-
-# Contracts
-cd ../contracts
-npm install
+# Install all workspace dependencies
+npm run setup
 ```
 
-### 2. Environment Setup
+**2. Environment Configuration**
+
+Create environment files from templates:
 
 ```bash
-# Copy environment templates
 # Frontend
-cp env.example frontend/.env.local
-# OR use the specific template:
 cp frontend/env.example frontend/.env.local
 
 # Backend
-cp env.example backend/.env
-# OR use the specific template:
 cp backend/env.example backend/.env
 
 # Contracts
-cp env.example contracts/.env
-# OR use the specific template:
-cp contracts/env.example contracts/.env
-
-# Then edit each file with your actual values
+cp contracts/.env.example contracts/.env
 ```
 
-### 3. Deploy Smart Contracts
+**3. Configure Environment Variables**
+
+**Frontend** (`frontend/.env.local`):
+```env
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+NEXT_PUBLIC_ARC_CONTRACT_ADDRESS=0x8080900fD63d6C7e4E716D1cb65F1071e98cD14C
+NEXT_PUBLIC_ARC_RPC_URL=https://rpc.testnet.arc.network
+NEXT_PUBLIC_ARC_CHAIN_ID=5042002
+NEXT_PUBLIC_BACKEND_URL=http://localhost:3001
+```
+
+**Backend** (`backend/.env`):
+```env
+SUPABASE_URL=your_supabase_project_url
+SUPABASE_SERVICE_KEY=your_supabase_service_role_key
+SERVER_WALLET_PRIVATE_KEY=your_aegis_server_private_key
+AEGIS_SERVER_WALLET=your_aegis_server_address
+ARC_CONTRACT_ADDRESS=0x8080900fD63d6C7e4E716D1cb65F1071e98cD14C
+ARC_RPC_URL=https://rpc.testnet.arc.network
+ARC_CHAIN_ID=5042002
+```
+
+**4. Database Setup**
+
+Run the schema in your Supabase SQL Editor:
+
+```bash
+cat database/schema.sql
+# Copy and paste into Supabase SQL Editor and run
+```
+
+**5. Deploy Smart Contracts** (Optional - already deployed)
+
+Our contract is already deployed to Arc Testnet. To deploy your own:
 
 ```bash
 cd contracts
 npx hardhat run scripts/deploy-arc.js --network arcTestnet
 ```
 
-### 4. Start Development Servers
+**6. Start Development Servers**
 
 ```bash
-# Terminal 1: Backend
-cd backend
-npm run start:dev
-
-# Terminal 2: Frontend
-cd frontend
+# Option 1: Start all services together
 npm run dev
+
+# Option 2: Start services separately
+# Terminal 1 - Backend
+cd backend && npm run start:dev
+
+# Terminal 2 - Frontend
+cd frontend && npm run dev
 ```
 
-### 5. Access the Application
+### Access the Application
 
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:3001
-- API Documentation: http://localhost:3001/api
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:3001
+- **API Docs**: http://localhost:3001/api
 
-## 🔑 Arc Chain Feature Utilization
+### Configure MetaMask for Arc Testnet
 
-### USDC as Native Gas Token
+Add the Arc Testnet network to your wallet:
 
-```typescript
-// Traditional EVM Chains
-await usdc.approve(contract, amount);  // Needs ETH for gas
-await contract.transfer(amount);        // Needs ETH for gas
+- **Network Name**: Arc Testnet
+- **RPC URL**: https://rpc.testnet.arc.network
+- **Chain ID**: 5042002
+- **Currency Symbol**: USDC (native)
+- **Block Explorer**: https://explorer.testnet.arc.network
 
-// Arc Chain
-await contract.deposit({ value: amount }); // Use USDC directly!
+## Deployed Contracts
+
+### Arc Testnet
+
+- **ArcPool Contract**: [`0x8080900fD63d6C7e4E716D1cb65F1071e98cD14C`](https://explorer.testnet.arc.network/address/0x8080900fD63d6C7e4E716D1cb65F1071e98cD14C)
+- **Aegis Server**: `0x782c3446aedabdd934e97ee255d5c5c62fe289d3`
+- **Chain ID**: 5042002
+- **Deployed**: 2025-11-08
+
+## How It Works
+
+### Complete Financing Flow
+
+```
+┌──────────────────────────────────────────────────────┐
+│ 1. SUPPLIER UPLOADS INVOICE                          │
+│    └─> Invoice saved to Supabase (status: PENDING)   │
+└────────────┬─────────────────────────────────────────┘
+             │
+┌────────────▼─────────────────────────────────────────┐
+│ 2. BUYER APPROVES INVOICE                            │
+│    └─> Triggers Aegis AI pricing analysis            │
+└────────────┬─────────────────────────────────────────┘
+             │
+┌────────────▼─────────────────────────────────────────┐
+│ 3. AI CALCULATES RISK & PRICING                      │
+│    ├─> Analyzes: credit scores, term, liquidity     │
+│    ├─> Calculates: discount rate (1-5%)             │
+│    └─> Generates: EIP-712 signature                 │
+└────────────┬─────────────────────────────────────────┘
+             │
+┌────────────▼─────────────────────────────────────────┐
+│ 4. REAL-TIME OFFER PUSHED TO SUPPLIER               │
+│    └─> Supabase Realtime notification               │
+└────────────┬─────────────────────────────────────────┘
+             │
+┌────────────▼─────────────────────────────────────────┐
+│ 5. SUPPLIER ACCEPTS & WITHDRAWS                      │
+│    ├─> Frontend calls withdrawFinancing()           │
+│    ├─> Contract verifies Aegis signature            │
+│    └─> USDC transferred (status: FINANCED)          │
+└────────────┬─────────────────────────────────────────┘
+             │
+┌────────────▼─────────────────────────────────────────┐
+│ 6. BUYER REPAYS AT MATURITY                          │
+│    ├─> Repays principal + interest                  │
+│    ├─> 90% interest to LPs, 10% to protocol         │
+│    └─> Invoice marked: REPAID                       │
+└──────────────────────────────────────────────────────┘
 ```
 
-### Simplified User Experience
+### Arc-Native Benefits
 
-1. **Single Currency** - Users only need USDC
-2. **No Approve Needed** - Native token transfers
-3. **Transparent Costs** - Gas and payments both in USDC
-4. **Lower Barrier** - New users don't need to acquire ETH first
+Traditional DeFi requires multiple transactions and token types:
 
-## 🔄 Complete Financing Flow
-
-```
-T=0: Supplier Uploads Invoice
-  │
-  ├─> Invoice data saved to Supabase
-  │
-T=1: Buyer Approves Invoice
-  │
-  ├─> Triggers Aegis AI Pricing
-  │
-T=2: AI Analyzes Risk Factors
-  │
-  ├─> Fetch on-chain liquidity status
-  ├─> Query company credit ratings
-  ├─> Calculate dynamic discount rate
-  │
-T=3: Generate EIP-712 Signature
-  │
-  ├─> Signature includes: invoiceId, supplier, amount, deadline
-  │
-T=4: Real-time Quote Push to Supplier
-  │
-  ├─> Supabase Realtime notification
-  │
-T=5: Supplier Accepts Financing
-  │
-  ├─> Frontend calls withdrawFinancing()
-  ├─> Contract verifies Aegis signature
-  ├─> USDC transferred to supplier wallet
-  │
-✅ Financing Complete
+```solidity
+// Traditional Ethereum DeFi
+await ethToken.approve(contract, amount);  // Needs ETH for gas
+await usdcToken.approve(contract, amount); // Needs ETH for gas
+await contract.deposit(amount);            // Needs ETH for gas
 ```
 
-## 🧪 Testing
+Arc simplifies this to a single transaction with one currency:
+
+```solidity
+// Aegis on Arc
+await contract.deposit({ value: usdcAmount }); // USDC for everything!
+```
+
+## Testing
+
+### Smart Contract Tests
 
 ```bash
-# Contract tests
 cd contracts
 npx hardhat test
-
-# Backend tests
-cd backend
-npm test
-
-# Frontend tests
-cd frontend
-npm test
 ```
 
-## 📊 Demo Data Preparation
+### Integration Testing
 
-### Test Accounts
+We provide a comprehensive 5-minute testing guide. See [`TESTING_CHECKLIST.md`](./TESTING_CHECKLIST.md) for step-by-step instructions.
 
-| Role | Address | USDC Required |
-|------|---------|---------------|
-| LP | 0x... | 10,000 USDC |
-| Buyer | 0x... | 100 USDC |
-| Supplier | 0x... | 10 USDC |
-| Aegis Server | 0x... | 100 USDC |
-
-### Demo Script
-
-1. LP deposits 500,000 USDC
-2. Supplier uploads 100,000 USDC invoice
+**Quick Test Flow**:
+1. LP deposits liquidity (1 USDC)
+2. Supplier creates invoice (0.5 USDC)
 3. Buyer approves invoice
-4. AI real-time pricing display
-5. Supplier accepts and receives 98,000 USDC
-6. Show Arc Explorer transaction records
+4. AI generates pricing offer
+5. Supplier withdraws financing (~0.49 USDC)
+6. Buyer repays (0.5 USDC)
+7. LP withdraws with interest (~1.009 USDC)
 
-## 🛠️ Tech Stack
+### API Testing
+
+```bash
+# Health check
+curl http://localhost:3001/api/health
+
+# Pool status
+curl http://localhost:3001/api/blockchain/pool/status
+```
+
+## Tech Stack
 
 ### Frontend
-- Next.js 14 (App Router)
-- TypeScript
-- Tailwind CSS
-- shadcn/ui
-- Wagmi
-- RainbowKit
-- Supabase Client
+- **Framework**: Next.js 14 (App Router)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS + shadcn/ui
+- **Web3**: Wagmi v2 + RainbowKit
+- **State**: Supabase Realtime
 
 ### Backend
-- Nest.js
-- TypeScript
-- Supabase
-- Ethers.js
-- JWT Authentication
+- **Framework**: NestJS
+- **Language**: TypeScript
+- **Database**: Supabase (PostgreSQL)
+- **Blockchain**: Ethers.js v6
+- **Auth**: JWT + Supabase Auth
 
 ### Smart Contracts
-- Solidity 0.8.19
-- Hardhat
-- OpenZeppelin
-- EIP-712
+- **Language**: Solidity 0.8.19
+- **Framework**: Hardhat
+- **Libraries**: OpenZeppelin Contracts
+- **Standards**: EIP-712 (Typed Signatures)
 
 ### Infrastructure
-- Arc Testnet
-- Supabase (PostgreSQL)
-- Vercel (Frontend)
-- Railway (Backend)
+- **Blockchain**: Arc Testnet
+- **Database**: Supabase
+- **Frontend Hosting**: Vercel (recommended)
+- **Backend Hosting**: Railway/Render (recommended)
 
-## 📝 License
+## Documentation
 
-MIT
+- **[Quick Start Guide](./doc/QUICK_START.md)** - Get up and running in 5 minutes
+- **[Testing Checklist](./TESTING_CHECKLIST.md)** - Comprehensive testing guide
+- **[Deployment Guide](./doc/DEPLOYMENT_GUIDE.md)** - Production deployment steps
+- **[API Documentation](./doc/API_AND_TESTING_GUIDE.md)** - API endpoints reference
+- **[Platform Design](./doc/PLATFORM_DESIGN.md)** - Architecture deep dive
+- **[Change Log](./doc/ChangeLog.md)** - Project history and updates
 
-## 🤝 Contributing
+## Development Scripts
 
-Issues and Pull Requests are welcome!
+```bash
+# Install all dependencies
+npm run setup
 
-## 📧 Contact
+# Start frontend + backend together
+npm run dev
 
-- Email: team@aegis-finance.com
-- Twitter: @AegisFinance
+# Start services individually
+npm run dev:frontend
+npm run dev:backend
 
+# Build all projects
+npm run build
+
+# Run all tests
+npm run test
+
+# Deploy contracts
+npm run deploy:contracts
+```
+
+## Contributing
+
+We welcome contributions! Please follow these guidelines:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## Security
+
+This project is under active development. Please DO NOT use it in production with real funds without a proper security audit.
+
+If you discover a security vulnerability, please email security@aegis-finance.com instead of using the issue tracker.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Links & Resources
+
+- **Arc Blockchain**: https://arc.network
+- **Arc Testnet Explorer**: https://explorer.testnet.arc.network
+- **Arc Testnet Faucet**: https://faucet.testnet.arc.network
+- **Supabase**: https://supabase.com
+- **Documentation**: See the `/doc` directory
+
+## Support
+
+- **Issues**: [GitHub Issues](https://github.com/yourusername/aegis-finance/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/yourusername/aegis-finance/discussions)
+- **Email**: team@aegis-finance.com
+
+---
+
+Built with ❤️ for the Arc Ecosystem
