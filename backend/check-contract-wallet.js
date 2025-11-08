@@ -3,7 +3,7 @@
  * Usage: node check-contract-wallet.js <CONTRACT_ADDRESS>
  */
 
-const { ethers } = require('./backend/node_modules/ethers');
+const { ethers } = require('ethers');
 
 async function checkContract() {
   const contractAddress = process.argv[2];
