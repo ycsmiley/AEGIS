@@ -167,75 +167,55 @@ export class AegisService {
     liquidityRatio: number,
   ): Promise<number | null> {
     if (!this.hf) {
-      return null; // No HF token, skip AI scoring
+      this.logger.warn('Hugging Face client not initialized - check HUGGINGFACE_API_TOKEN');
+      return null;
     }
 
     try {
       this.logger.debug('Requesting AI risk prediction from Hugging Face...');
 
-      const prompt = `As a financial risk analyst, predict the creditworthiness score (0-100, where 100 is lowest risk) for this invoice financing scenario:
-- Invoice Amount: $${invoiceAmount.toLocaleString()} USDC
-- Payment Term: ${daysUntilDue} days
-- Buyer Credit Rating: ${buyerRating}/100
-- Supplier Credit Rating: ${supplierRating}/100
-- Market Liquidity Ratio: ${(liquidityRatio * 100).toFixed(1)}%
+      // Create a concise prompt for the AI
+      const prompt = `Credit Score Analysis:
+Invoice: $${invoiceAmount}, Term: ${daysUntilDue} days
+Buyer Rating: ${buyerRating}/100, Supplier: ${supplierRating}/100
+Liquidity: ${(liquidityRatio * 100).toFixed(1)}%
 
-Respond with only a single number between 0-100 representing the creditworthiness score.`;
+Rate creditworthiness 0-100 (100=safest): `;
 
-      // Use Mistral model with conversational API
-      const modelName = 'mistralai/Mistral-7B-Instruct-v0.2';
+      // Use HfInference client with text generation
+      this.logger.debug('Using HfInference client for text generation...');
 
-      let result;
-      try {
-        this.logger.debug(`Using Mistral model: ${modelName}`);
+      const result = await this.hf.textGeneration({
+        model: 'gpt2',
+        inputs: prompt,
+        parameters: {
+          max_new_tokens: 10,
+          temperature: 0.5,
+          return_full_text: false,
+        },
+      });
 
-        // Mistral-7B-Instruct requires conversational API - use direct HTTP request
-        // Note: Hugging Face migrated to new inference router
-        const response = await fetch(
-          `https://router.huggingface.co/hf-inference/models/${modelName}`,
-          {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${this.configService.get<string>('HUGGINGFACE_API_TOKEN')}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              inputs: {
-                text: prompt,
-                past_user_inputs: [],
-                generated_responses: [],
-              },
-              parameters: {
-                max_new_tokens: 10,
-                temperature: 0.3,
-              },
-            }),
-          }
-        );
+      this.logger.debug(`AI raw response: ${result.generated_text}`);
 
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${await response.text()}`);
-        }
+      // Extract number from response
+      const generatedText = result.generated_text.trim();
+      const numberMatch = generatedText.match(/(\d+)/);
 
-        const data = await response.json();
-        result = { generated_text: data.generated_text };
-        this.logger.log(`Successfully used Mistral model: ${modelName}`);
-      } catch (err) {
-        this.logger.error(`Mistral model failed: ${err.message}`);
-        this.logger.warn('Falling back to rule-based scoring');
-        return null; // Gracefully fallback to rule-based scoring
-      }
-
-      const scoreText = result.generated_text.trim();
-      const score = parseFloat(scoreText);
-
-      if (isNaN(score)) {
-        this.logger.warn(`AI returned non-numeric score: ${scoreText}`);
+      if (!numberMatch) {
+        this.logger.warn(`No number found in AI response: ${generatedText}`);
         return null;
       }
 
+      const score = parseInt(numberMatch[1]);
+
+      if (isNaN(score)) {
+        this.logger.warn(`Invalid score from AI: ${numberMatch[1]}`);
+        return null;
+      }
+
+      // Normalize score to 0-100 range
       const normalizedScore = Math.max(0, Math.min(100, score));
-      this.logger.log(`AI risk score calculated: ${normalizedScore}/100`);
+      this.logger.log(`AI risk score: ${normalizedScore}/100`);
       return normalizedScore;
     } catch (error) {
       this.logger.error('HF AI risk prediction failed:', error.message);
