@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Aegis Finance backend service with AI-powered pricing engine",
   "scripts": {
-    "build": "npx nest build",
+    "build": "node ./node_modules/@nestjs/cli/bin/nest.js build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
