@@ -91,6 +91,7 @@ export default function SupplierPortal() {
       if (isSuccess && hash && processingInvoiceId) {
         try {
           // Update database status
+          // @ts-ignore - Supabase type inference issue
           await supabase
             .from('invoices')
             .update({
