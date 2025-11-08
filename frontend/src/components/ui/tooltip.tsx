@@ -25,7 +25,7 @@ export function Tooltip({ children, content, className }: TooltipProps) {
         <div
           className={cn(
             "absolute z-50 px-3 py-2 text-sm text-white bg-neutral-800 rounded-md shadow-lg",
-            "border border-neutral-700 max-w-xs whitespace-normal break-words",
+            "border border-neutral-700 min-w-[200px] max-w-md whitespace-normal break-words",
             "bottom-full left-1/2 -translate-x-1/2 mb-2",
             "animate-in fade-in-0 zoom-in-95 duration-100",
             className
