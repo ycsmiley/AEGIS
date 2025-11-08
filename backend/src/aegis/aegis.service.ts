@@ -379,6 +379,17 @@ Respond with only a single number between 0-100 representing the creditworthines
     }
 
     const wallet = new ethers.Wallet(privateKey);
+
+    // Log wallet address for debugging
+    this.logger.log(`🔑 Signing with wallet: ${wallet.address}`);
+    this.logger.log(`🎯 Contract expects: 0x782c3446aeDabdD934e97ee255D5C5c62fE289D3`);
+    const isMatch = wallet.address.toLowerCase() === '0x782c3446aeDabdD934e97ee255D5C5c62fE289D3'.toLowerCase();
+    if (!isMatch) {
+      this.logger.error(`❌ WALLET MISMATCH! Using wrong private key!`);
+      this.logger.error(`   Got: ${wallet.address}`);
+      this.logger.error(`   Expected: 0x782c3446aeDabdD934e97ee255D5C5c62fE289D3`);
+    }
+
     const signature = await wallet.signTypedData(domain, types, values);
 
     this.logger.log(
