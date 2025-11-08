@@ -189,21 +189,35 @@ Respond with only a single number between 0-100 representing the creditworthines
       try {
         this.logger.debug(`Using Mistral model: ${modelName}`);
 
-        // Mistral-7B-Instruct requires conversational API
-        const response = await this.hf.conversational({
-          model: modelName,
-          inputs: {
-            text: prompt,
-            past_user_inputs: [],
-            generated_responses: [],
-          },
-          parameters: {
-            max_new_tokens: 10,
-            temperature: 0.3,
-          },
-        });
+        // Mistral-7B-Instruct requires conversational API - use direct HTTP request
+        const response = await fetch(
+          `https://api-inference.huggingface.co/models/${modelName}`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              inputs: {
+                text: prompt,
+                past_user_inputs: [],
+                generated_responses: [],
+              },
+              parameters: {
+                max_new_tokens: 10,
+                temperature: 0.3,
+              },
+            }),
+          }
+        );
 
-        result = { generated_text: response.generated_text };
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+        }
+
+        const data = await response.json();
+        result = { generated_text: data.generated_text };
         this.logger.log(`Successfully used Mistral model: ${modelName}`);
       } catch (err) {
         this.logger.error(`Mistral model failed: ${err.message}`);
