@@ -198,27 +198,29 @@ export default function BuyerPortal() {
       setError(null);
       setSuccessMessage(null);
 
-      if (!invoice.amount || !invoice.due_date) {
-        setError('Invalid invoice data');
+      // Validate invoice has required data
+      if (!invoice.aegis_repayment_amount || !invoice.due_date) {
+        setError('Invalid invoice data - missing repayment amount or due date');
         return;
       }
 
       // Calculate late fee if overdue
       const now = Math.floor(Date.now() / 1000);
       const dueDate = Math.floor(new Date(invoice.due_date).getTime() / 1000);
-      let totalAmount = invoice.amount;
+      let totalAmount = invoice.aegis_repayment_amount; // Use repayment amount (includes interest)
       let lateFeeAmount = 0;
 
       if (now > dueDate) {
         // Calculate late fee (1% per day, max 30%)
         const daysLate = Math.floor((now - dueDate) / 86400);
         lateFeeAmount = Math.min(
-          invoice.amount * daysLate * 0.01,
-          invoice.amount * 0.3
+          invoice.aegis_repayment_amount * daysLate * 0.01,
+          invoice.aegis_repayment_amount * 0.3
         );
-        totalAmount = invoice.amount + lateFeeAmount;
+        totalAmount = invoice.aegis_repayment_amount + lateFeeAmount;
 
         console.log(`Invoice is ${daysLate} days overdue. Late fee: $${lateFeeAmount.toFixed(2)}`);
+        console.log(`Base repayment: $${invoice.aegis_repayment_amount}, Total with late fee: $${totalAmount.toFixed(2)}`);
       }
 
       // Create invoice hash for contract call
@@ -226,6 +228,8 @@ export default function BuyerPortal() {
 
       // Store the invoice ID for the success handler
       setRepayingInvoiceId(invoice.id);
+
+      console.log(`Repaying invoice ${invoice.id.slice(0, 8)}... with amount: $${totalAmount.toFixed(2)}`);
 
       // Repay to the pool contract with correct parameters
       writeContract({
@@ -564,16 +568,17 @@ export default function BuyerPortal() {
                   const now = Math.floor(Date.now() / 1000);
                   const dueDate = invoice.due_date ? Math.floor(new Date(invoice.due_date).getTime() / 1000) : 0;
                   const isOverdue = now > dueDate;
+                  const baseRepayment = invoice.aegis_repayment_amount || invoice.amount || 0;
                   let lateFee = 0;
                   let daysLate = 0;
                   if (isOverdue && dueDate > 0) {
                     daysLate = Math.floor((now - dueDate) / 86400);
                     lateFee = Math.min(
-                      (invoice.amount || 0) * daysLate * 0.01,
-                      (invoice.amount || 0) * 0.3
+                      baseRepayment * daysLate * 0.01,
+                      baseRepayment * 0.3
                     );
                   }
-                  const totalDue = (invoice.amount || 0) + lateFee;
+                  const totalDue = baseRepayment + lateFee;
 
                   return (
                     <Card key={invoice.id} className={isOverdue ? "border-red-800/50" : "border-yellow-800/50"}>
@@ -592,9 +597,12 @@ export default function BuyerPortal() {
                             </div>
                           </div>
                           <div className="text-right">
-                            <p className="text-xs text-neutral-500 mb-1">Original Amount</p>
+                            <p className="text-xs text-neutral-500 mb-1">Repayment Due</p>
                             <p className="text-xl font-semibold text-white">
-                              ${invoice.amount?.toLocaleString() || '0'}
+                              ${baseRepayment.toLocaleString()}
+                            </p>
+                            <p className="text-xs text-neutral-500">
+                              (Invoice: ${invoice.amount?.toLocaleString() || '0'})
                             </p>
                             {invoice.due_date && (
                               <p className={`text-xs mt-1 ${isOverdue ? 'text-red-400 font-semibold' : 'text-neutral-500'}`}>
@@ -613,9 +621,13 @@ export default function BuyerPortal() {
                               <p className="text-sm font-semibold text-red-400">Late Fee Applied</p>
                             </div>
                             <div className="text-sm text-neutral-300 space-y-1">
-                              <div className="flex justify-between">
-                                <span>Original Amount:</span>
+                              <div className="flex justify-between text-xs text-neutral-400">
+                                <span>Invoice Amount:</span>
                                 <span>${invoice.amount?.toLocaleString() || '0'}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Base Repayment:</span>
+                                <span>${baseRepayment.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                               </div>
                               <div className="flex justify-between text-red-400">
                                 <span>Late Fee ({daysLate} days × 1%):</span>
