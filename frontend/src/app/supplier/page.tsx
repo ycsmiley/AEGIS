@@ -6,6 +6,7 @@ import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { parseUnits, keccak256, stringToHex } from 'viem';
 import { createClient } from '@/lib/supabase/client';
 import { Database } from '@/lib/supabase/types';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -61,7 +62,7 @@ export default function SupplierPortal() {
   const [expandedInvoiceId, setExpandedInvoiceId] = useState<string | null>(null);
   const [processingInvoiceId, setProcessingInvoiceId] = useState<string | null>(null);
 
-  const supabase = createClient();
+  const supabase: SupabaseClient<Database> = createClient();
   const contractAddress = process.env.NEXT_PUBLIC_ARC_CONTRACT_ADDRESS as `0x${string}` || '0x';
 
   const {
@@ -91,12 +92,13 @@ export default function SupplierPortal() {
       if (isSuccess && hash && processingInvoiceId) {
         try {
           // Update database status
+          const updateData: Database['public']['Tables']['invoices']['Update'] = {
+            status: 'FINANCED',
+            financing_tx_hash: hash,
+          };
           await supabase
             .from('invoices')
-            .update({
-              status: 'FINANCED',
-              financing_tx_hash: hash,
-            })
+            .update(updateData)
             .eq('id', processingInvoiceId);
 
           // Reload invoices

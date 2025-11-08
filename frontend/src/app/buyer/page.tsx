@@ -6,6 +6,7 @@ import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { parseUnits, keccak256, stringToHex } from 'viem';
 import { createClient } from '@/lib/supabase/client';
 import { Database } from '@/lib/supabase/types';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -66,7 +67,7 @@ export default function BuyerPortal() {
   const [expandedInvoiceId, setExpandedInvoiceId] = useState<string | null>(null);
   const [repayingInvoiceId, setRepayingInvoiceId] = useState<string | null>(null);
 
-  const supabase = createClient();
+  const supabase: SupabaseClient<Database> = createClient();
   const contractAddress = process.env.NEXT_PUBLIC_ARC_CONTRACT_ADDRESS as `0x${string}` || '0x';
 
   const {
@@ -111,12 +112,13 @@ export default function BuyerPortal() {
     const updateRepaymentStatus = async () => {
       if (isSuccess && repayingInvoiceId && hash) {
         try {
+          const updateData: Database['public']['Tables']['invoices']['Update'] = {
+            status: 'PAID',
+            repayment_tx_hash: hash,
+          };
           const { error: updateError } = await supabase
             .from('invoices')
-            .update({
-              status: 'PAID' as const,
-              repayment_tx_hash: hash,
-            })
+            .update(updateData)
             .eq('id', repayingInvoiceId);
 
           if (updateError) {
@@ -189,9 +191,12 @@ export default function BuyerPortal() {
       setError(null);
       setSuccessMessage(null);
 
+      const updateData: Database['public']['Tables']['invoices']['Update'] = {
+        status: 'REJECTED',
+      };
       const { error: updateError } = await supabase
         .from('invoices')
-        .update({ status: 'REJECTED' })
+        .update(updateData)
         .eq('id', invoiceId);
 
       if (updateError) throw updateError;
