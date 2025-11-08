@@ -1,0 +1,12 @@
+{
+  "network": "arcTestnet",
+  "chainId": "5042002",
+  "contracts": {
+    "ArcPool": "0x8080900fD63d6C7e4E716D1cb65F1071e98cD14C"
+  },
+  "deployer": "0xdaaBa82018dbE31D9e28726F156feE448223e1Ec",
+  "aegisServerWallet": "0x782c3446aedabdd934e97ee255d5c5c62fe289d3",
+  "initialLiquidity": "0.0",
+  "timestamp": "2025-11-08T11:36:24.568Z",
+  "blockNumber": 10076117
+}
