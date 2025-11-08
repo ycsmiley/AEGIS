@@ -59,6 +59,7 @@ export default function SupplierPortal() {
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const [expandedInvoiceId, setExpandedInvoiceId] = useState<string | null>(null);
+  const [processingInvoiceId, setProcessingInvoiceId] = useState<string | null>(null);
 
   const supabase = createClient();
   const contractAddress = process.env.NEXT_PUBLIC_ARC_CONTRACT_ADDRESS as `0x${string}` || '0x';
@@ -83,6 +84,36 @@ export default function SupplierPortal() {
       loadInvoices();
     }
   }, [address, mounted]);
+
+  // Handle successful transaction
+  useEffect(() => {
+    const updateInvoiceStatus = async () => {
+      if (isSuccess && hash && processingInvoiceId) {
+        try {
+          // Update database status
+          await supabase
+            .from('invoices')
+            .update({
+              status: 'FINANCED',
+              financing_tx_hash: hash,
+            })
+            .eq('id', processingInvoiceId);
+
+          // Reload invoices
+          await loadInvoices();
+
+          // Clear processing state
+          setProcessingInvoiceId(null);
+          setError(null);
+        } catch (err) {
+          console.error('Error updating invoice status:', err);
+          setError('Transaction succeeded but failed to update database');
+        }
+      }
+    };
+
+    updateInvoiceStatus();
+  }, [isSuccess, hash, processingInvoiceId]);
 
   const loadInvoices = async () => {
     if (!address) return;
@@ -110,6 +141,7 @@ export default function SupplierPortal() {
 
   const handleAcceptFinancing = async (invoice: Invoice) => {
     setError(null);
+    setProcessingInvoiceId(invoice.id);
 
     try {
       // 1. Get signature from backend if not already available
@@ -135,7 +167,7 @@ export default function SupplierPortal() {
         throw new Error(`Invalid invoice pricing data: payout=${invoice.aegis_payout_offer}, repayment=${invoice.aegis_repayment_amount}`);
       }
 
-      // 2. Call smart contract
+      // 2. Call smart contract (database update happens in useEffect after transaction confirms)
       await writeContract({
         address: contractAddress,
         abi: ArcPoolABI,
@@ -150,22 +182,10 @@ export default function SupplierPortal() {
           invoice.aegis_signature as `0x${string}`,
         ],
       });
-
-      // 3. Update database status on success
-      if (isSuccess && hash) {
-        await supabase
-          .from('invoices')
-          .update({
-            status: 'FINANCED',
-            financing_tx_hash: hash,
-          })
-          .eq('id', invoice.id);
-
-        loadInvoices();
-      }
     } catch (err) {
       console.error('Error accepting financing:', err);
       setError(err instanceof Error ? err.message : 'Failed to accept financing');
+      setProcessingInvoiceId(null); // Clear processing state on error
     }
   };
 
@@ -362,12 +382,12 @@ export default function SupplierPortal() {
                         <Button
                           size="sm"
                           onClick={() => handleAcceptFinancing(invoice)}
-                          disabled={isWritePending || isConfirming}
+                          disabled={processingInvoiceId === invoice.id || (isWritePending || isConfirming)}
                         >
-                          {(isWritePending || isConfirming) ? (
+                          {(processingInvoiceId === invoice.id && (isWritePending || isConfirming)) ? (
                             <>
                               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Processing
+                              {isConfirming ? 'Confirming...' : 'Processing...'}
                             </>
                           ) : (
                             'Accept Offer'
